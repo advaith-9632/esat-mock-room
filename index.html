@@ -184,6 +184,8 @@ textarea{resize:vertical;font-family:ui-monospace,Consolas,monospace;font-size:1
 .partchk:has(input:checked){border-color:var(--sel);background:var(--sel-soft)}
 .partchk input{width:18px;height:18px;accent-color:var(--sel);margin:0}
 .partchk small{color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.partchk.off{opacity:.5;cursor:default;background:#F7F9FB}
+.nomods .modcol{display:none}
 details.adv{margin-top:12px;font-size:13px}
 details.adv summary{cursor:pointer;color:var(--sel)}
 .keyrow{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:8px}
@@ -276,7 +278,12 @@ tbody tr:hover{background:var(--sel-soft)}
             <label class="field" for="paper-name"><span>Paper name</span><input id="paper-name" type="text" placeholder="e.g. ENGAA 2019 Section 1"></label>
           </li>
           <li class="step">
-            <h2>Section and timing</h2>
+            <h2>What to practise</h2>
+            <div class="seg" role="radiogroup" aria-label="Choose questions by" style="margin:0 0 10px">
+              <label><input type="radio" name="pick" id="pick-mod" value="modules" checked> ESAT modules</label>
+              <label><input type="radio" name="pick" id="pick-part" value="parts"> Paper parts</label>
+            </div>
+            <div class="parts" id="modules" hidden></div>
             <div class="parts" id="parts" hidden></div>
             <p class="hint" id="parts-hint" style="margin-top:0">Load a paper and its parts appear here, read from the front cover.</p>
             <div class="row">
@@ -425,7 +432,7 @@ tbody tr:hover{background:var(--sel-soft)}
         <div><button class="secondary" id="res-mark" type="button">Mark answers</button></div>
       </div>
       <p class="empty">Select a row to review that question with your answer and the correct one.</p>
-      <div class="tablewrap"><table><thead><tr><th>#</th><th>Paper Q</th><th>Your answer</th><th>Correct</th><th>Result</th><th>Time</th></tr></thead><tbody id="res-rows"></tbody></table></div>
+      <div class="tablewrap"><table><thead><tr><th>#</th><th>Paper Q</th><th class="modcol">Module</th><th>Your answer</th><th>Correct</th><th>Result</th><th>Time</th></tr></thead><tbody id="res-rows"></tbody></table></div>
     </div>
   </div>
   <footer class="navbar">
@@ -447,7 +454,7 @@ tbody tr:hover{background:var(--sel-soft)}
   <div class="pv-dlg" role="dialog" aria-modal="true" aria-labelledby="nav-h">
     <div class="pv-dlg-h"><span id="nav-h">Navigator - select a question to go to it</span><button type="button" id="nav-x" aria-label="Close navigator">✕</button></div>
     <div class="nav-sum" id="rv-sum"></div>
-    <div class="nav-table"><table><thead><tr><th>Question #</th><th>Status</th><th>Flagged for Review</th></tr></thead><tbody id="rv-rows"></tbody></table></div>
+    <div class="nav-table"><table><thead><tr><th>Question #</th><th class="modcol">Module</th><th>Status</th><th>Flagged for Review</th></tr></thead><tbody id="rv-rows"></tbody></table></div>
     <div class="pv-dlg-f">
       <button type="button" class="dlgbtn" id="rv-inc">Review Incomplete</button>
       <button type="button" class="dlgbtn" id="rv-flag">Review Flagged</button>
@@ -637,6 +644,43 @@ function detectOptions(pages, slices) {
   return n >= 3 ? n : 0;
 }
 
+/* ESAT modules. Old papers map onto them by part; ENGAA parts and NSAA Part E mix maths and
+   physics, so those questions are sorted one by one from their wording. */
+const MODULES = [
+  { id: 'M1', name: 'Mathematics 1' }, { id: 'M2', name: 'Mathematics 2' }, { id: 'PHY', name: 'Physics' },
+  { id: 'CHE', name: 'Chemistry' }, { id: 'BIO', name: 'Biology' }
+];
+const PHYS_WORDS = /\b(velocit\w*|speeds?|accelerat\w*|decelerat\w*|forces?|newtons?|energy|power|currents?|voltages?|potential difference|resist\w*|charged?|charges|waves?|frequenc\w*|wavelengths?|momentum|densit\w*|pressure|temperatures?|heat\w*|thermal|radioactiv\w*|isotopes?|nucle\w*|decays?|half-life|lens\w*|refract\w*|reflect\w*|magnet\w*|electr\w*|circuits?|gravit\w*|springs?|friction\w*|kinetic|photons?|particles?|atoms?|batter\w*|sound|mirrors?|orbit\w*|mass(es)?|weight|work done|efficien\w*|moments?|torque|projectiles?|transformers?|coils?|e\.?m\.?f|alpha|beta|gamma|displacement|collisions?|elastic|latent|gas(es)?|upthrust|satellites?|planets?|lamps?|capacitors?|ammeters?|voltmeters?|kilograms?|joules?|watts?|volts?|ohms?|hertz|pascals?|kelvin|spectrum|oscillat\w*|pendulum|vehicle|car|lorry|train|trolley|rocket|light|incidence|critical angle|transparent|liquids?|lift|astronaut)\b/gi;
+const PHYS_UNITS = /(\d\s*(m\s?s|N|J|W|V|A|Hz|kg|K|Pa|kW|MW|MJ|kJ|mA|km\s?h|Ω|°C)\b)|Ω|°C/g;
+function physicsScore(t) { return (t.match(PHYS_WORDS) || []).length + 2 * (t.match(PHYS_UNITS) || []).length; }
+function questionText(pages, q) {
+  return q.slices.map((sl) => pages[sl.pi].items.filter((it) => it.top >= sl.y0 - 2 && it.top <= sl.y1 && !isJunk(it, pages[sl.pi])).map((it) => it.s).join(' ')).join(' ');
+}
+function moduleFor(test, part, text) {
+  const phys = physicsScore(text) >= 3;
+  if (test === 'NSAA') {
+    if (part.L === 'A') return 'M1';
+    if (/^physics/i.test(part.name)) return 'PHY';
+    if (/^chem/i.test(part.name)) return 'CHE';
+    if (/^bio/i.test(part.name)) return 'BIO';
+    return phys ? 'PHY' : 'M2';
+  }
+  return phys ? 'PHY' : /advanced/i.test(part.name) ? 'M2' : 'M1';
+}
+// Question number -> { module, part } for the whole paper, or null if the cover couldn't be read.
+function buildCatalog(pages, cover) {
+  if (!cover || !cover.parts.length) return null;
+  const last = cover.parts[cover.parts.length - 1].to;
+  const r = analyse(pages, 1, last, 0, 8);
+  if (r.booklet) return null;
+  const cat = {};
+  for (const q of r.questions) {
+    const part = cover.parts.find((p) => q.num >= p.from && q.num <= p.to);
+    if (part) cat[q.num] = { module: moduleFor(cover.test, part, questionText(pages, q)), part: part.L };
+  }
+  return cat;
+}
+
 function analyse(pages, from, to, startPage, defOpts) {
   const startIdx = Math.min(pages.length - 1, Math.max(0, (startPage || 1) - 1));
   const textCount = pages.reduce((a, p) => a + p.items.length, 0);
@@ -808,6 +852,47 @@ function syncFromParts() {
   updateEsatLabel(); updateKeyStatus();
 }
 
+/* ESAT module picker: the default way to choose questions */
+const moduleName = (id) => (MODULES.find((m) => m.id === id) || { name: '' }).name;
+const moduleRank = (id) => { const i = MODULES.findIndex((m) => m.id === id); return i < 0 ? 99 : i; };
+function pickMode() { return document.querySelector('input[name=pick]:checked').value; }
+function renderPick() {
+  const mods = pickMode() === 'modules';
+  $('#modules').hidden = true; $('#parts').hidden = true;
+  if (mods) renderModules(); else renderParts();
+}
+function renderModules() {
+  const box = $('#modules'), hint = $('#parts-hint');
+  if (!S.catalog) {
+    box.innerHTML = '';
+    hint.textContent = S.pdf
+      ? 'This paper couldn’t be sorted into ESAT modules. Switch to Paper parts, or type the question numbers below.'
+      : 'Load a paper and it’s sorted into ESAT modules: Mathematics 1, Mathematics 2, Physics, Chemistry and Biology.';
+    return;
+  }
+  const counts = {};
+  Object.values(S.catalog).forEach((e) => { counts[e.module] = (counts[e.module] || 0) + 1; });
+  const saved = store.get('esat-mock-modules', ['M1', 'M2', 'PHY']);
+  box.innerHTML = MODULES.map((m) => {
+    const n = counts[m.id] || 0;
+    return `<label class="partchk${n ? '' : ' off'}" for="mod-${m.id}"><input type="checkbox" id="mod-${m.id}" value="${m.id}"${n && saved.includes(m.id) ? ' checked' : ''}${n ? '' : ' disabled'}><span><b>${m.name}</b></span><small>${n ? `${n} question${n === 1 ? '' : 's'}` : 'none in this paper'}</small></label>`;
+  }).join('');
+  box.hidden = false;
+  syncFromModules();
+}
+function selectedModules() { return MODULES.map((m) => m.id).filter((id) => { const el = $('#mod-' + id); return el && el.checked; }); }
+function syncFromModules() {
+  if (!S.catalog) return;
+  const sel = selectedModules();
+  const nums = Object.keys(S.catalog).map(Number).filter((n) => sel.includes(S.catalog[n].module)).sort((a, b) => a - b);
+  $('#q-list').value = listText(nums);
+  if (nums.length) $('#mins').value = Math.max(1, Math.round(nums.length * 40 / 27));
+  $('#parts-hint').textContent = nums.length
+    ? `${nums.length} questions, grouped by module like the real ESAT and timed at its rate of 40 minutes per 27 questions. Maths and physics questions are sorted automatically from their wording.`
+    : 'Tick at least one module.';
+  updateEsatLabel(); updateKeyStatus();
+}
+
 /* ---------------- home screen ---------------- */
 function updateEsatLabel() {
   const n = parseList($('#q-list').value).length;
@@ -833,7 +918,8 @@ async function loadPaperFile(file) {
     const textCount = pages.reduce((a, p) => a + p.items.length, 0);
     setStatus('#pdf-status', `✓ ${file.name} · ${pdf.numPages} pages` + (textCount < 40 ? ' · no selectable text, so it will open in booklet view' : ''), 'ok');
     S.cover = readCover(pages);
-    renderParts();
+    try { S.catalog = buildCatalog(pages, S.cover); } catch (e) { S.catalog = null; }
+    renderPick();
   } catch (e) {
     S.pdf = null; S.pages = null;
     setStatus('#pdf-status', 'That file could not be opened as a PDF. Choose the question paper PDF and try again.', 'err');
@@ -948,7 +1034,7 @@ function go(i) {
   S.cur = Math.max(0, Math.min(qs.length - 1, i));
   const q = qs[S.cur];
   if (S.mode === 'exam') S.visited[q.num] = true;
-  $('#qcount').textContent = `${S.cur + 1} of ${qs.length}`;
+  $('#qcount').textContent = (q.module ? moduleName(q.module) + ' · ' : '') + `${S.cur + 1} of ${qs.length}`;
   $('#flag').setAttribute('aria-pressed', String(!!S.flags[q.num]));
   $('#prev').disabled = prevIndex() === null;
   $('#next').disabled = S.mode === 'review' && nextIndex() === null;
@@ -1162,6 +1248,7 @@ function openReview() {
 function closeReview() { S.reviewOpen = false; $('#navdlg').hidden = true; }
 function renderReview() {
   const qs = S.paper.questions;
+  $('#navdlg').classList.toggle('nomods', !qs.some((q) => q.module));
   let c = 0, inc = 0, un = 0, fl = 0;
   $('#rv-rows').innerHTML = qs.map((q, i) => {
     const st = statusOf(i);
@@ -1170,7 +1257,7 @@ function renderReview() {
     const label = st === 'complete' ? 'Complete' : st === 'incomplete' ? 'Incomplete' : 'Unseen';
     const cls = st === 'complete' ? '' : st === 'incomplete' ? 'inc' : 'uns';
     const pq = S.paper.source === 'pdf' && q.num !== i + 1 ? ` <span class="uns">(paper Q${q.num})</span>` : '';
-    return `<tr data-i="${i}" tabindex="0"${i === S.cur ? ' class="cur"' : ''}><td>${i + 1}${pq}</td><td class="${cls}">${label}</td><td class="fl">${S.flags[q.num] ? '⚑ Flagged' : ''}</td></tr>`;
+    return `<tr data-i="${i}" tabindex="0"${i === S.cur ? ' class="cur"' : ''}><td>${i + 1}${pq}</td><td class="modcol">${q.module ? moduleName(q.module) : ''}</td><td class="${cls}">${label}</td><td class="fl">${S.flags[q.num] ? '⚑ Flagged' : ''}</td></tr>`;
   }).join('');
   $('#rv-sum').innerHTML = `<span>Complete: <b>${c}</b></span><span>Incomplete: <b>${inc}</b></span><span>Unseen: <b>${un}</b></span><span>Flagged: <b>${fl}</b></span>`;
   $('#rv-inc').disabled = c === qs.length;
@@ -1237,12 +1324,21 @@ function showResults() {
     `<div class="tile"><div class="k">Answered</div><div class="v">${sc.answered}<small> / ${sc.total}</small></div></div>` +
     `<div class="tile"><div class="k">Time used</div><div class="v">${fmtDur(S.elapsed)}${p.time ? `<small> of ${fmtDur(p.time)}</small>` : ''}</div></div>` +
     `<div class="tile"><div class="k">Average per question</div><div class="v">${fmtDur(avg)}<small> · ESAT pace 1:29</small></div></div>`;
+  const byMod = {};
+  p.questions.forEach((q) => {
+    if (!q.module || !p.key[q.num]) return;
+    const m = (byMod[q.module] = byMod[q.module] || { c: 0, n: 0 });
+    m.n++; if (S.answers[q.num] === p.key[q.num]) m.c++;
+  });
+  const mods = Object.keys(byMod).sort((a, b) => moduleRank(a) - moduleRank(b));
+  if (mods.length) $('#res-tiles').innerHTML += mods.map((id) => `<div class="tile"><div class="k">${moduleName(id)}</div><div class="v">${byMod[id].c}<small> / ${byMod[id].n} · ${Math.round(byMod[id].c / byMod[id].n * 100)}%</small></div></div>`).join('');
+  $('#results').classList.toggle('nomods', !p.questions.some((q) => q.module));
   const maxT = Math.max(1, ...p.questions.map((q) => S.timeOn[q.num] || 0));
   $('#res-rows').innerHTML = p.questions.map((q, i) => {
     const k = p.key[q.num], m = S.answers[q.num];
     const res = !k ? '<span class="pill na">No key</span>' : m === k ? '<span class="pill ok">Correct</span>' : m ? '<span class="pill bad">Incorrect</span>' : '<span class="pill bad">Unanswered</span>';
     const t = S.timeOn[q.num] || 0;
-    return `<tr data-i="${i}" tabindex="0"><td>${i + 1}${S.flags[q.num] ? ' <span class="flagmark" title="Flagged">⚑</span>' : ''}</td><td>${q.num}</td><td>${m || '–'}</td><td>${k || '–'}</td><td>${res}</td><td>${fmtDur(t)}<span class="timebar" style="width:${Math.round(t / maxT * 60)}px"></span></td></tr>`;
+    return `<tr data-i="${i}" tabindex="0"><td>${i + 1}${S.flags[q.num] ? ' <span class="flagmark" title="Flagged">⚑</span>' : ''}</td><td>${q.num}</td><td class="modcol">${q.module ? moduleName(q.module) : ''}</td><td>${m || '–'}</td><td>${k || '–'}</td><td>${res}</td><td>${fmtDur(t)}<span class="timebar" style="width:${Math.round(t / maxT * 60)}px"></span></td></tr>`;
   }).join('');
   const missing = sc.total - sc.marked;
   $('#res-key').hidden = p.source === 'html' ? true : false;
@@ -1272,6 +1368,8 @@ $('#res-mark').onclick = () => {
 
 /* ---------------- wiring ---------------- */
 $('#parts').addEventListener('change', syncFromParts);
+$('#modules').addEventListener('change', () => { store.set('esat-mock-modules', selectedModules()); syncFromModules(); });
+document.querySelectorAll('input[name=pick]').forEach((r) => r.addEventListener('change', renderPick));
 $('#q-list').addEventListener('input', () => { updateEsatLabel(); updateKeyStatus(); });
 $('#key').addEventListener('input', updateKeyStatus);
 $('#paper-name').addEventListener('input', (e) => { delete e.target.dataset.auto; });
@@ -1299,6 +1397,8 @@ $('#start-btn').onclick = async () => {
   r.detected = r.questions.filter((q) => !q.fallback).length;
   const pis = r.questions.flatMap((q) => q.slices.map((sl) => sl.pi));
   r.pageSpan = pis.length ? [Math.min(...pis) + 1, Math.max(...pis) + 1] : null;
+  if (S.catalog) r.questions.forEach((q) => { if (S.catalog[q.num]) q.module = S.catalog[q.num].module; });
+  if (S.catalog && pickMode() === 'modules') r.questions.sort((a, b) => moduleRank(a.module) - moduleRank(b.module) || a.num - b.num);
   S.paper = Object.assign(r, {
     title: $('#paper-name').value.trim() || 'Past paper',
     source: 'pdf', time: timeLimit(nums.length), key: parseKey($('#key').value, nums)
@@ -1372,6 +1472,7 @@ window.addEventListener('resize', () => {
 });
 
 if (!hasPdf) setStatus('#pdf-status', 'The PDF reader could not load. The demo paper still works; reload to try again.', 'err');
+renderPick();
 updateEsatLabel();
 renderHistory();
 })();
