@@ -184,6 +184,8 @@ textarea{resize:vertical;font-family:ui-monospace,Consolas,monospace;font-size:1
 .partchk:has(input:checked){border-color:var(--sel);background:var(--sel-soft)}
 .partchk input{width:18px;height:18px;accent-color:var(--sel);margin:0}
 .partchk small{color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.skipchk{display:flex;gap:10px;align-items:flex-start;font-size:14px;margin:4px 0 8px;cursor:pointer}
+.skipchk input{width:18px;height:18px;accent-color:var(--sel);margin:1px 0 0;flex:none}
 .partchk.off{opacity:.5;cursor:default;background:#F7F9FB}
 .nomods .modcol{display:none}
 details.adv{margin-top:12px;font-size:13px}
@@ -285,6 +287,7 @@ tbody tr:hover{background:var(--sel-soft)}
             </div>
             <div class="parts" id="modules" hidden></div>
             <div class="parts" id="parts" hidden></div>
+            <label class="skipchk" id="skip-wrap" for="skip-x" hidden><input type="checkbox" id="skip-x" checked><span id="skip-label">Skip questions crossed out as not on the ESAT specification</span></label>
             <p class="hint" id="parts-hint" style="margin-top:0">Load a paper and its parts appear here, read from the front cover.</p>
             <div class="row">
               <label class="field" for="q-list"><span>Questions</span><input id="q-list" type="text" value="1-20" autocomplete="off" placeholder="e.g. 1-20 or 1-18, 37-54"></label>
@@ -546,6 +549,45 @@ async function extractPages(pdf) {
   return pages;
 }
 
+// UAT-UK's copies mark questions outside the ESAT specification with an X drawn through the
+// question number: two short stroked diagonals. Collect those Xs (in viewport coordinates) per page.
+const CROSS_NOTE = /cross through the\s+question number/i;
+async function findCrosses(pdf, pages) {
+  const OPS = pdfjsLib.OPS;
+  const mul = (m, n) => [m[0] * n[0] + m[2] * n[1], m[1] * n[0] + m[3] * n[1], m[0] * n[2] + m[2] * n[3], m[1] * n[2] + m[3] * n[3], m[0] * n[4] + m[2] * n[5] + m[4], m[1] * n[4] + m[3] * n[5] + m[5]];
+  const diag = (x1, y1, x2, y2) => Math.abs(x2 - x1) > 1 && Math.abs(y2 - y1) > 1;
+  for (const pg of pages) {
+    pg.crosses = [];
+    const page = await pdf.getPage(pg.n);
+    const vp = page.getViewport({ scale: 1 });
+    const ol = await page.getOperatorList();
+    let ctm = [1, 0, 0, 1, 0, 0];
+    const stack = [];
+    for (let i = 0; i < ol.fnArray.length; i++) {
+      const fn = ol.fnArray[i], a = ol.argsArray[i];
+      if (fn === OPS.save) stack.push(ctm);
+      else if (fn === OPS.restore) ctm = stack.pop() || [1, 0, 0, 1, 0, 0];
+      else if (fn === OPS.transform) ctm = mul(ctm, a);
+      else if (fn === OPS.paintFormXObjectBegin) { stack.push(ctm); if (a[0]) ctm = mul(ctm, a[0]); }
+      else if (fn === OPS.paintFormXObjectEnd) ctm = stack.pop() || [1, 0, 0, 1, 0, 0];
+      else if (fn === OPS.constructPath && ol.fnArray[i + 1] === OPS.stroke) {
+        const ops = a[0], c = a[1];
+        if (ops.length !== 4 || ops[0] !== OPS.moveTo || ops[1] !== OPS.lineTo || ops[2] !== OPS.moveTo || ops[3] !== OPS.lineTo) continue;
+        if (!diag(c[0], c[1], c[2], c[3]) || !diag(c[4], c[5], c[6], c[7])) continue;
+        const pts = [[c[0], c[1]], [c[2], c[3]], [c[4], c[5]], [c[6], c[7]]].map(([x, y]) =>
+          vp.convertToViewportPoint(ctm[0] * x + ctm[2] * y + ctm[4], ctm[1] * x + ctm[3] * y + ctm[5]));
+        const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+        const b = { x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) };
+        const w = b.x1 - b.x0, h = b.y1 - b.y0;
+        if (w > 4 && h > 4 && w < 40 && h < 40) pg.crosses.push(b);
+      }
+    }
+  }
+}
+function isCrossed(pg, it) {
+  return (pg.crosses || []).some((c) => c.x1 >= it.x - 4 && c.x0 <= it.right + 4 && c.y1 >= it.top - 4 && c.y0 <= it.bot + 4);
+}
+
 const NUM_RE = /^(\d{1,3})(?:[.)]|\s|$)/;
 const JUNK_TXT = /turn over|blank page|end of (the )?(test|section|paper|part)|©|ucles|cambridge assessment|cambridge university press|intentionally (left )?blank/i;
 function isPageNum(it, pg) { return /^[-–\s]*\d{1,3}[-–\s]*$/.test(it.s) && Math.abs((it.x + it.right) / 2 - pg.W / 2) < pg.W * 0.12; }
@@ -588,7 +630,7 @@ function candidates(pages, startIdx, cols) {
     for (const it of pg.items) {
       const m = it.s.match(NUM_RE);
       if (!m || Math.abs(it.x - col) > 8 || inBand(pg, it) || isPageNum(it, pg)) continue;
-      out.push({ num: +m[1], pi: i, top: it.top });
+      out.push({ num: +m[1], pi: i, top: it.top, crossed: isCrossed(pg, it) });
     }
   }
   out.sort((a, b) => a.pi - b.pi || a.top - b.top);
@@ -676,7 +718,7 @@ function buildCatalog(pages, cover) {
   const cat = {};
   for (const q of r.questions) {
     const part = cover.parts.find((p) => q.num >= p.from && q.num <= p.to);
-    if (part) cat[q.num] = { module: moduleFor(cover.test, part, questionText(pages, q)), part: part.L };
+    if (part) cat[q.num] = { module: moduleFor(cover.test, part, questionText(pages, q)), part: part.L, crossed: !!q.crossed };
   }
   return cat;
 }
@@ -702,6 +744,7 @@ function analyse(pages, from, to, startPage, defOpts) {
     const q = { num: n, slices: [], fallback: false, nOpts: defOpts };
     const st = booklet ? null : best.found[n];
     if (st) {
+      q.crossed = !!st.crossed;
       let next = null;
       for (let m = n + 1; m <= to + 1; m++) if (best.found[m]) { next = best.found[m]; break; }
       let pi = st.pi, y0 = Math.max(0, st.top - 8);
@@ -846,7 +889,8 @@ function syncFromParts() {
   if (!c || !c.parts.length) return;
   const sel = c.parts.filter((p) => $('#part-' + p.L).checked);
   const nums = [];
-  sel.forEach((p) => { for (let n = p.from; n <= p.to; n++) nums.push(n); });
+  const cross = skipping() ? crossedSet() : new Set();
+  sel.forEach((p) => { for (let n = p.from; n <= p.to; n++) if (!cross.has(n)) nums.push(n); });
   $('#q-list').value = listText(nums);
   if (c.minutes && sel.length) $('#mins').value = Math.round(c.minutes * sel.length / (c.attempt || c.parts.length));
   updateEsatLabel(); updateKeyStatus();
@@ -856,7 +900,18 @@ function syncFromParts() {
 const moduleName = (id) => (MODULES.find((m) => m.id === id) || { name: '' }).name;
 const moduleRank = (id) => { const i = MODULES.findIndex((m) => m.id === id); return i < 0 ? 99 : i; };
 function pickMode() { return document.querySelector('input[name=pick]:checked').value; }
+function crossedSet() { return new Set(S.catalog ? Object.keys(S.catalog).filter((n) => S.catalog[n].crossed).map(Number) : []); }
+function skipping() { return !$('#skip-wrap').hidden && $('#skip-x').checked; }
+function renderSkip() {
+  const n = crossedSet().size;
+  $('#skip-wrap').hidden = !n;
+  if (n) {
+    $('#skip-x').checked = store.get('esat-mock-skip', true);
+    $('#skip-label').textContent = `Skip the ${n} question${n === 1 ? '' : 's'} crossed out as not on the ESAT specification`;
+  }
+}
 function renderPick() {
+  renderSkip();
   const mods = pickMode() === 'modules';
   $('#modules').hidden = true; $('#parts').hidden = true;
   if (mods) renderModules(); else renderParts();
@@ -871,11 +926,15 @@ function renderModules() {
     return;
   }
   const counts = {};
-  Object.values(S.catalog).forEach((e) => { counts[e.module] = (counts[e.module] || 0) + 1; });
+  const skip = skipping(), skipped = {};
+  Object.values(S.catalog).forEach((e) => {
+    if (skip && e.crossed) skipped[e.module] = (skipped[e.module] || 0) + 1;
+    else counts[e.module] = (counts[e.module] || 0) + 1;
+  });
   const saved = store.get('esat-mock-modules', ['M1', 'M2', 'PHY']);
   box.innerHTML = MODULES.map((m) => {
     const n = counts[m.id] || 0;
-    return `<label class="partchk${n ? '' : ' off'}" for="mod-${m.id}"><input type="checkbox" id="mod-${m.id}" value="${m.id}"${n && saved.includes(m.id) ? ' checked' : ''}${n ? '' : ' disabled'}><span><b>${m.name}</b></span><small>${n ? `${n} question${n === 1 ? '' : 's'}` : 'none in this paper'}</small></label>`;
+    return `<label class="partchk${n ? '' : ' off'}" for="mod-${m.id}"><input type="checkbox" id="mod-${m.id}" value="${m.id}"${n && saved.includes(m.id) ? ' checked' : ''}${n ? '' : ' disabled'}><span><b>${m.name}</b></span><small>${n ? `${n} question${n === 1 ? '' : 's'}` : 'none in this paper'}${skipped[m.id] ? ` · ${skipped[m.id]} skipped` : ''}</small></label>`;
   }).join('');
   box.hidden = false;
   syncFromModules();
@@ -884,7 +943,8 @@ function selectedModules() { return MODULES.map((m) => m.id).filter((id) => { co
 function syncFromModules() {
   if (!S.catalog) return;
   const sel = selectedModules();
-  const nums = Object.keys(S.catalog).map(Number).filter((n) => sel.includes(S.catalog[n].module)).sort((a, b) => a - b);
+  const skip = skipping();
+  const nums = Object.keys(S.catalog).map(Number).filter((n) => sel.includes(S.catalog[n].module) && !(skip && S.catalog[n].crossed)).sort((a, b) => a - b);
   $('#q-list').value = listText(nums);
   if (nums.length) $('#mins').value = Math.max(1, Math.round(nums.length * 40 / 27));
   $('#parts-hint').textContent = nums.length
@@ -912,6 +972,7 @@ async function loadPaperFile(file) {
   try {
     const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
     const pages = await extractPages(pdf);
+    if (pages.some((p) => CROSS_NOTE.test(p.items.map((i) => i.s).join(' ')))) { try { await findCrosses(pdf, pages); } catch (e) {} }
     S.pdf = pdf; S.pages = pages; pageCache.clear();
     const nm = $('#paper-name');
     if (!nm.value || nm.dataset.auto) { nm.value = file.name.replace(/\.pdf$/i, '').replace(/[_]+/g, ' '); nm.dataset.auto = '1'; }
@@ -1368,6 +1429,7 @@ $('#res-mark').onclick = () => {
 
 /* ---------------- wiring ---------------- */
 $('#parts').addEventListener('change', syncFromParts);
+$('#skip-x').addEventListener('change', () => { store.set('esat-mock-skip', $('#skip-x').checked); renderPick(); });
 $('#modules').addEventListener('change', () => { store.set('esat-mock-modules', selectedModules()); syncFromModules(); });
 document.querySelectorAll('input[name=pick]').forEach((r) => r.addEventListener('change', renderPick));
 $('#q-list').addEventListener('input', () => { updateEsatLabel(); updateKeyStatus(); });
