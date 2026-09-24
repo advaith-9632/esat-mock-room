@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="ESAT Mock">
-<meta name="theme-color" content="#15345A">
+<meta name="theme-color" content="#336DAC">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>ESAT Mock Room</title>
 <style>
@@ -48,78 +48,104 @@ button:disabled{cursor:default;opacity:.45}
 .nbtn.go{background:#fff;color:var(--chrome);border-color:#fff}
 .nbtn.go:hover:not(:disabled){background:#E6EEF8}
 
-/* ---------- exam ---------- */
-.toolbar{background:var(--band);border-bottom:1px solid var(--band-line);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:6px 16px;flex:none;position:relative}
-.toolbar .grp{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-.tbtn{background:#fff;border:1px solid var(--band-line);border-radius:3px;padding:5px 10px;font-size:13px;color:var(--ink)}
-.tbtn[aria-pressed="true"]{background:var(--sel-soft);border-color:var(--sel);color:var(--sel)}
-.flagbtn{display:flex;align-items:center;gap:6px;font-weight:700}
-.flagbtn .ico{color:#8793A1}
-.flagbtn[aria-pressed="true"]{background:var(--flag-soft);border-color:var(--flag);color:#6E4700}
-.flagbtn[aria-pressed="true"] .ico{color:var(--flag)}
-.toast{position:absolute;left:50%;top:calc(100% + 8px);transform:translateX(-50%);background:#8E1F17;color:#fff;padding:8px 14px;border-radius:3px;font-weight:700;font-size:14px;z-index:5;box-shadow:0 4px 14px rgba(0,0,0,.2)}
-.stage{flex:1;min-height:0;overflow:auto;background:var(--paper);padding:22px 16px 28px}
-.qwrap{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
-.notice{background:var(--flag-soft);border:1px solid #EACB85;color:#5C3D00;padding:8px 12px;border-radius:3px;font-size:13px}
-.qbody{overflow-x:auto;min-height:60px}
+/* ---------- exam (Pearson VUE style) ---------- */
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.pv{--pv:#336DAC;--pv-2:#5B7DC4;--pv-sep:rgba(255,255,255,.5);--cs-bg:#FFFFFF;--cs-fg:#000000;font-family:Tahoma,Verdana,"Segoe UI",Arial,sans-serif}
+.pv[data-scheme="cream"]{--cs-bg:#FAF4D3}
+.pv[data-scheme="blue"]{--cs-bg:#D9E8F6}
+.pv[data-scheme="grey"]{--cs-bg:#E4E4E4}
+.pv[data-scheme="wob"]{--cs-bg:#000000;--cs-fg:#FFFFFF}
+.pv[data-scheme="yob"]{--cs-bg:#000000;--cs-fg:#FFE600}
+.pv svg{flex:none}
+.pv u{text-underline-offset:2px}
+.pv-title{background:var(--pv);color:#fff;display:flex;justify-content:space-between;align-items:stretch;gap:2px 16px;flex-wrap:wrap;padding:3px 6px 2px;min-height:34px;flex:none}
+.pv-title h1{font:400 17px/1.2 Tahoma,Verdana,"Segoe UI",Arial,sans-serif;margin:0;align-self:center;text-wrap:balance}
+.pv-right{display:flex;flex-direction:column;align-items:flex-end;justify-content:space-between;gap:1px;font-size:13px;margin-left:auto}
+.pv-timer{background:none;border:0;color:#fff;font:inherit;font-size:13px;padding:0 2px;display:flex;gap:5px;align-items:center}
+.pv-timer:disabled{opacity:1;cursor:default}
+.pv-timer b{font-weight:400;font-variant-numeric:tabular-nums}
+.pv-timer.warn b{background:#fff;color:#B00000;padding:0 3px;font-weight:700}
+.pv-timer.hide b{visibility:hidden}
+.pv-count{display:flex;gap:4px;align-items:center;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pv-sub{background:var(--pv-2);color:#fff;display:flex;justify-content:space-between;align-items:stretch;flex-wrap:wrap;min-height:24px;font-size:12.5px;flex:none;position:relative}
+.pv-sub .grp{display:flex;align-items:stretch;flex-wrap:wrap}
+.pv-link{background:none;border:0;color:#fff;font:inherit;font-size:12.5px;padding:2px 6px;display:flex;align-items:center;gap:4px}
+.pv-link:hover:not(:disabled){background:rgba(255,255,255,.16)}
+.pv-link[aria-pressed="true"]{background:rgba(0,0,0,.16)}
+#flag[aria-pressed="true"]{background:none}
+#flag[aria-pressed="true"] .flag-fill{fill:#FFD200}
+.pv-scheme{display:flex;align-items:stretch;padding:1px 0 1px 2px}
+.pv-scheme select{font:inherit;font-size:12.5px;color:#fff;background:var(--pv-2);border:1px solid rgba(255,255,255,.75);border-radius:0;padding:1px 4px;min-width:150px}
+.pv-scheme select option{color:#000;background:#fff}
+.pv-foot{background:var(--pv);display:flex;justify-content:space-between;align-items:stretch;min-height:26px;flex:none}
+.pv-foot .grp{display:flex;align-items:stretch}
+.pv-btn{background:none;border:0;border-left:1px solid var(--pv-sep);color:#fff;font:inherit;font-size:15px;padding:1px 7px;display:flex;align-items:center;gap:4px;white-space:nowrap}
+.pv-foot .grp:first-child .pv-btn{border-left:0;border-right:1px solid var(--pv-sep)}
+.pv-btn:hover:not(:disabled){background:rgba(255,255,255,.15)}
+.pv-btn:disabled{opacity:.5}
+@media (pointer:coarse){.pv-foot{min-height:40px}.pv-btn{padding:4px 12px}.pv-sub{min-height:32px}.pv-link{padding:4px 10px}}
+.toast{position:absolute;left:50%;top:calc(100% + 8px);transform:translateX(-50%);background:#B00000;color:#fff;padding:6px 14px;font-weight:700;font-size:14px;z-index:5;box-shadow:0 3px 10px rgba(0,0,0,.25);white-space:nowrap}
+.pv-stage{flex:1;min-height:0;overflow:auto;background:var(--cs-bg);color:var(--cs-fg);padding:14px 10px 40px;font-family:Arial,Helvetica,sans-serif;font-size:15px}
+.pv-doc{max-width:760px;line-height:1.5}
+.pv-doc h2{font-size:18px;margin:0 0 12px}
+.pv-doc ul{margin:0 0 14px;padding-left:20px;display:grid;gap:6px;font-size:14px}
+.notice{background:#FFF4D6;border:1px solid #E3C77A;color:#4D3600;padding:6px 10px;font-size:13px;margin:0 0 12px;max-width:880px}
+.qbody{overflow-x:auto;min-height:40px}
 .qbody canvas{display:block;background:#fff}
-.qbody canvas + canvas{border-top:1px dashed var(--line);margin-top:6px;padding-top:0}
-.qbody .loading{color:var(--muted);font-size:14px;padding:30px 0}
-.qbody.booklet canvas{margin:0 auto 14px;box-shadow:0 0 0 1px var(--line)}
-.qhtml{display:grid;grid-template-columns:auto 1fr;gap:14px;font-size:16px;line-height:1.6;max-width:70ch}
-.qhtml .qnum{font-weight:700}
-.qhtml p{margin:0 0 10px}
-.qhtml ol.stmts{margin:6px 0 10px;padding-left:0;list-style:none;display:grid;gap:4px}
+.qbody canvas + canvas{margin-top:4px}
+.pv[data-scheme="cream"] .qbody canvas,.pv[data-scheme="blue"] .qbody canvas,.pv[data-scheme="grey"] .qbody canvas{mix-blend-mode:multiply}
+.pv[data-scheme="wob"] .qbody canvas{filter:invert(1)}
+.pv[data-scheme="yob"] .qbody canvas{filter:invert(1) sepia(1) saturate(6) hue-rotate(5deg) brightness(1.05)}
+.qbody .loading{opacity:.6;font-size:14px;padding:20px 0}
+.qbody.booklet canvas{margin:0 0 14px;box-shadow:0 0 0 1px #bbb}
+.qhtml{max-width:75ch;line-height:1.5}
+.qhtml p{margin:0 0 12px}
+.qhtml ol.stmts{margin:4px 0 12px;padding-left:0;list-style:none;display:grid;gap:4px}
 .qhtml ol.stmts li{display:grid;grid-template-columns:28px 1fr}
-.frac{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;font-size:.95em;line-height:1.25;margin:0 2px}
+.frac{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;font-family:"Times New Roman",Times,serif;font-size:1.02em;line-height:1.25;margin:0 2px}
 .frac>span:first-child{border-bottom:1px solid currentColor;padding:0 3px}
 .frac>span:last-child{padding:0 3px}
-
-fieldset.answers{border:1px solid var(--line);border-radius:4px;padding:12px 14px 14px;margin:0;background:#F8FAFC}
-fieldset.answers legend{font-size:13px;font-weight:700;color:var(--muted);padding:0 6px;text-transform:uppercase;letter-spacing:.06em}
-.stage.booklet-mode fieldset.answers{position:sticky;bottom:-28px;box-shadow:0 -6px 16px rgba(20,40,70,.12)}
-.opts{display:grid;gap:8px}
-.opts-letters{grid-template-columns:repeat(auto-fill,minmax(84px,1fr))}
-.opts-text{grid-template-columns:1fr}
-.opt{position:relative;display:flex;align-items:stretch;border:1px solid var(--line);border-radius:4px;background:#fff}
-.opt label{flex:1;display:flex;align-items:center;gap:10px;padding:8px 10px;cursor:pointer;min-height:42px}
-.opt input{position:absolute;opacity:0;pointer-events:none}
-.bubble{width:26px;height:26px;border-radius:50%;border:2px solid #8995A3;display:grid;place-items:center;font-weight:700;font-size:13px;flex:none;color:var(--ink)}
-.opt:hover{border-color:#8FA6C0}
-.opt:focus-within{outline:3px solid #F2B705;outline-offset:1px}
-.opt.is-sel{border-color:var(--sel);background:var(--sel-soft)}
-.opt.is-sel .bubble{background:var(--sel);border-color:var(--sel);color:#fff}
-.opt.is-struck .otext,.opt.is-struck .bubble{opacity:.4}
-.opt.is-struck .otext{text-decoration:line-through}
-.opt.is-struck .bubble{text-decoration:line-through}
-.opt.is-correct{border-color:var(--ok);background:var(--ok-soft)}
-.opt.is-correct .bubble{border-color:var(--ok);background:var(--ok);color:#fff}
-.opt.is-wrong{border-color:var(--bad);background:var(--bad-soft)}
-.opt.is-wrong .bubble{border-color:var(--bad);background:var(--bad);color:#fff}
-.strike{border:0;border-left:1px solid var(--line-soft);background:transparent;color:#9AA5B1;padding:0 9px;font-size:12px}
-.strike:hover{color:var(--bad)}
-.strike[aria-pressed="true"]{color:var(--bad)}
-.ans-foot{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:13px;color:var(--muted);align-items:center}
+.qhtml i,.otext i{font-family:"Times New Roman",Times,serif}
+fieldset.answers{border:0;margin:22px 0 0;padding:0 0 0 20px;min-width:0}
+.pv-stage.booklet-mode fieldset.answers{position:sticky;bottom:-40px;background:var(--cs-bg);padding:10px 12px 12px;border-top:2px solid var(--pv);box-shadow:0 -4px 12px rgba(0,0,0,.12)}
+.opts{display:flex;flex-direction:column;gap:12px}
+.opts-letters{flex-direction:row;flex-wrap:wrap;gap:10px 26px}
+.pv-opt{display:flex;align-items:center;gap:8px;cursor:pointer;width:fit-content;max-width:100%;padding:2px 4px 2px 0;user-select:none;-webkit-user-select:none}
+.pv-opt input{margin:0;width:14px;height:14px;flex:none;accent-color:#336DAC;cursor:pointer}
+.pv-opt.struck .otext,.pv-opt.struck .ltr{text-decoration:line-through;opacity:.45}
+.pv-opt .mark{font-weight:700;font-size:14px;margin-left:4px}
+.pv-opt .mark.ok{color:#1A8C3A}
+.pv-opt .mark.bad{color:#C00000}
+@media (pointer:coarse){.pv-opt{padding:6px 6px 6px 0}.pv-opt input{width:20px;height:20px}}
+.ans-foot{display:flex;gap:16px;flex-wrap:wrap;margin-top:14px}
 .linkbtn{background:none;border:0;padding:0;color:var(--sel);text-decoration:underline;font-size:13px;cursor:pointer}
-.verdict{margin:12px 0 0;font-weight:700}
-.verdict.ok{color:var(--ok)} .verdict.bad{color:var(--bad)}
+.pv-stage .linkbtn{color:inherit;opacity:.7;font-size:12px}
+.explain{margin:22px 0 0;max-width:640px;border:1px solid #9FB3D6;background:#fff;color:#000;font-size:14px}
+.explain h2{margin:0;background:var(--pv-2);color:#fff;font:400 13px Tahoma,Verdana,sans-serif;padding:3px 8px}
+.explain p{margin:0;padding:10px 12px}
+.explain .ok{color:#1A8C3A;font-weight:700}
+.explain .bad{color:#C00000;font-weight:700}
 
-/* review screen */
-.reviewpane{flex:1;min-height:0;overflow:auto;background:var(--paper);padding:22px 16px}
-.rv-inner{max-width:980px;margin:0 auto}
-.rv-inner h2{margin:0 0 6px;font-size:20px}
-.rv-inner > p{margin:0 0 14px;color:var(--muted);max-width:70ch}
-.rv-sum{display:flex;gap:18px;flex-wrap:wrap;font-size:14px;margin:0 0 16px;padding:10px 12px;background:var(--band);border-radius:3px}
-.rv-sum b{font-variant-numeric:tabular-nums}
-.rv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px}
-.rv-item{display:grid;grid-template-columns:18px 1fr auto;align-items:center;gap:8px;text-align:left;background:#fff;border:1px solid var(--line);border-radius:3px;padding:8px 10px;font-size:14px}
-.rv-item:hover{border-color:var(--sel)}
-.rv-item .f{color:var(--flag);font-size:14px}
-.rv-item .s{font-size:12px;font-weight:700;padding:2px 7px;border-radius:10px}
-.rv-item.complete .s{background:var(--ok-soft);color:var(--ok)}
-.rv-item.incomplete .s{background:var(--bad-soft);color:var(--bad)}
-.rv-item.unseen .s{background:var(--line-soft);color:var(--muted)}
-.rv-item small{color:var(--muted);font-size:11px;display:block}
+/* navigator + dialogs (Pearson style) */
+.dlg-back{position:fixed;inset:0;background:rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center;padding:16px;z-index:40}
+.pv-dlg{background:#fff;color:#000;border:1px solid #336DAC;width:min(560px,100%);max-height:88%;display:flex;flex-direction:column;box-shadow:0 8px 30px rgba(0,0,0,.35);font-family:Tahoma,Verdana,"Segoe UI",Arial,sans-serif}
+.pv-dlg-h{background:#336DAC;color:#fff;padding:4px 4px 4px 8px;font-size:14px;display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:26px}
+.pv-dlg-h button{background:none;border:0;color:#fff;font-size:14px;padding:2px 8px;line-height:1}
+.nav-sum{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;padding:6px 10px;background:#EEF2FA;border-bottom:1px solid #C9D4EA}
+.nav-table{overflow:auto;flex:1;min-height:0}
+.nav-table table{font-size:13px;width:100%;border-collapse:collapse}
+.nav-table th{position:sticky;top:0;background:#DCE5F4;color:#000;text-transform:none;letter-spacing:0;font-size:12.5px;font-weight:700;border-bottom:1px solid #AFC0DF;padding:4px 10px;text-align:left}
+.nav-table td{padding:4px 10px;border-bottom:1px solid #E6EAF2}
+.nav-table tbody tr{cursor:pointer}
+.nav-table tbody tr:hover,.nav-table tbody tr:focus{background:#E2ECFA;outline:none}
+.nav-table tr.cur td{font-weight:700}
+.nav-table .inc{color:#C00000}
+.nav-table .uns{color:#6B6B6B}
+.nav-table .fl{color:#A87000}
+.pv-dlg-f{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;padding:8px 10px;border-top:1px solid #C9D4EA;background:#F4F6FA}
+.dlgbtn{background:linear-gradient(#FFFFFF,#E3E3E3);border:1px solid #8C8C8C;border-radius:2px;color:#000;font:inherit;font-size:13px;padding:4px 14px;min-width:72px}
+.dlgbtn:hover:not(:disabled){background:linear-gradient(#FFFFFF,#D6E4F7);border-color:#336DAC}
+@media (pointer:coarse){.dlgbtn{padding:8px 14px}.nav-table td{padding:9px 10px}}
 
 /* ---------- document-style screens (home, intro, results) ---------- */
 .scroll{flex:1;min-height:0;overflow:auto;padding-block:24px 40px;padding-inline:16px}
@@ -202,16 +228,16 @@ tbody tr:hover{background:var(--sel-soft)}
 .keybox h3{margin:0;font-size:15px}
 
 /* ---------- modal ---------- */
-.modal-back{position:fixed;inset:0;background:rgba(12,24,40,.5);display:flex;align-items:center;justify-content:center;padding:16px;z-index:50}
-.modal{background:#fff;max-width:460px;width:100%;border-top:6px solid var(--chrome);border-radius:3px;padding:20px;box-shadow:0 12px 40px rgba(0,0,0,.3)}
-.modal h3{margin:0 0 8px;font-size:18px}
-.modal p{margin:0 0 18px;color:var(--muted)}
-.modal .mbtns{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.modal-back{position:fixed;inset:0;background:rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;padding:16px;z-index:50}
+.modal{width:min(440px,100%)}
+.modal p{margin:0;padding:16px 14px;font-size:14px;line-height:1.45}
+.modal .pv-dlg-f{justify-content:center}
 
 @media (max-width:560px){
-  .timer span{display:none}
   .nbtn{padding:8px 10px}
-  .stage{padding:16px 12px 24px}
+  .pv-title h1{font-size:15px}
+  .pv-btn{font-size:14px}
+  .pv-timer .lbl{display:none}
 }
 @media (prefers-reduced-motion: no-preference){
   .toast{animation:pulse 1s ease-in-out 3}
@@ -311,7 +337,7 @@ tbody tr:hover{background:var(--sel-soft)}
             <li>Your PDF stays in this browser; nothing is uploaded.</li>
             <li>If a question is cut badly, press <b>Whole page</b> in the toolbar to see the full page.</li>
             <li>Scanned papers with no selectable text open in booklet view, with the answer sheet pinned underneath.</li>
-            <li>Shortcuts: <kbd>Alt</kbd>+<kbd>N</kbd> next, <kbd>Alt</kbd>+<kbd>P</kbd> previous, <kbd>Alt</kbd>+<kbd>F</kbd> flag, <kbd>Alt</kbd>+<kbd>R</kbd> navigator, letter keys to answer.</li>
+            <li>Shortcuts: <kbd>Alt</kbd>+<kbd>N</kbd> next, <kbd>Alt</kbd>+<kbd>P</kbd> previous, <kbd>Alt</kbd>+<kbd>F</kbd> flag, <kbd>Alt</kbd>+<kbd>V</kbd> navigator, <kbd>Alt</kbd>+<kbd>E</kbd> end exam, letter keys to answer.</li>
           </ul>
         </div>
       </aside>
@@ -320,73 +346,73 @@ tbody tr:hover{background:var(--sel-soft)}
 </section>
 
 <!-- ================= INTRO ================= -->
-<section id="intro" class="screen" hidden>
-  <header class="titlebar"><div class="ttl" id="intro-title">Practice test</div><div class="qcount">Instructions</div></header>
-  <div class="scroll">
-    <div class="doc">
-      <h2>Before you begin</h2>
+<section id="intro" class="screen pv" hidden>
+  <header class="pv-title">
+    <h1>Engineering and Science Admissions Test (ESAT)</h1>
+    <div class="pv-right"><span></span><span class="pv-count">Instructions</span></div>
+  </header>
+  <div class="pv-sub"><div class="grp"></div></div>
+  <main class="pv-stage">
+    <div class="pv-doc">
+      <h2 id="intro-title">Practice test</h2>
       <dl class="facts" id="intro-facts"></dl>
       <div id="intro-detect"></div>
       <ul>
-        <li>There is one question per screen. Choose one answer for each question; there is no penalty for wrong answers.</li>
-        <li>Use <b>Flag for Review</b> to mark questions to come back to. <b>Navigator</b> shows which are complete, incomplete or flagged.</li>
-        <li>Click <b>✕</b> beside an option to cross it out while you work.</li>
-        <li>The timer starts when you press <b>Start Test</b>. When time runs out, your answers are submitted.</li>
-        <li>You need your own paper for working. Calculators aren't allowed.</li>
+        <li>There is one question per screen. Choose one answer for each question. Wrong answers don't lose marks.</li>
+        <li>Select <b>Flag for Review</b> to mark a question to come back to. <b>Navigator</b> lists every question as Complete, Incomplete or Unseen.</li>
+        <li>With a mouse, right-click an option to cross it out.</li>
+        <li><b>Color Scheme</b> changes the colours of the question area.</li>
+        <li>When time runs out, your answers are submitted automatically. You need your own paper for working. Calculators aren't allowed.</li>
       </ul>
+      <p>Select <b>Next</b> to begin. The timer starts then.</p>
     </div>
-  </div>
-  <footer class="navbar">
-    <div class="grp"><button class="nbtn quiet" id="intro-back" type="button">Back to setup</button></div>
-    <div class="grp"><button class="nbtn go" id="intro-start" type="button">Start Test ▶</button></div>
+  </main>
+  <footer class="pv-foot">
+    <div class="grp"><button class="pv-btn" id="intro-back" type="button"><svg width="14" height="12" viewBox="0 0 14 12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 1L1 6l5 5M1 6h12"/></svg> Back to Setup</button></div>
+    <div class="grp"><button class="pv-btn" id="intro-start" type="button"><u>N</u>ext <svg width="14" height="12" viewBox="0 0 14 12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 1l5 5-5 5M13 6H1"/></svg></button></div>
   </footer>
 </section>
 
 <!-- ================= EXAM ================= -->
-<section id="exam" class="screen" hidden>
-  <header class="titlebar">
-    <div class="ttl" id="ex-title">Practice test</div>
-    <div class="tb-right">
-      <button class="timer" id="timer" type="button" title="Hide or show the time"><span id="timer-lbl">Time Remaining</span> <b id="timer-val">00:00</b></button>
-      <div class="qcount" id="qcount">Question 1 of 1</div>
+<section id="exam" class="screen pv" hidden>
+  <header class="pv-title">
+    <h1>Engineering and Science Admissions Test (ESAT)</h1>
+    <div class="pv-right">
+      <button class="pv-timer" id="timer" type="button" title="Hide or show the time"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 4v4l2.5 1.5"/></svg><span class="lbl" id="timer-lbl">Time Remaining</span> <b id="timer-val">00:00</b></button>
+      <span class="pv-count"><svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M1 2h14M1 6h10M1 10h14"/></svg><span id="qcount">1 of 1</span></span>
     </div>
   </header>
-  <div class="toolbar" id="toolbar">
+  <div class="pv-sub" id="toolbar">
     <div class="grp">
-      <button class="tbtn" id="zoom-out" type="button" aria-label="Zoom out">Zoom −</button>
-      <button class="tbtn" id="zoom-in" type="button" aria-label="Zoom in">Zoom +</button>
-      <button class="tbtn" id="fullpage" type="button" aria-pressed="false">Whole page</button>
+      <button class="pv-link" id="explain" type="button" aria-pressed="false" hidden><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M5.5 11.5h5M6.5 14h3M8 1.5a4.5 4.5 0 0 0-2.6 8.2V11h5.2V9.7A4.5 4.5 0 0 0 8 1.5z"/></svg>Explain Answer</button>
+      <button class="pv-link" id="fullpage" type="button" aria-pressed="false"><svg width="12" height="14" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="M1 1h7l3 3v9H1z"/></svg>Whole Page</button>
     </div>
-    <button class="tbtn flagbtn" id="flag" type="button" aria-pressed="false" title="Alt+F"><span class="ico">⚑</span> Flag for Review</button>
+    <div class="grp">
+      <button class="pv-link" id="flag" type="button" aria-pressed="false" title="Alt+F"><svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path class="flag-fill" d="M3.5 2.5h9l-2.2 3.2 2.2 3.3h-9z" fill="none"/><path d="M3.5 15V2.5h9l-2.2 3.2 2.2 3.3h-9" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg><span><u>F</u>lag for Review</span></button>
+      <label class="pv-scheme" for="scheme"><select id="scheme" aria-label="Color Scheme">
+        <option value="" selected hidden>Color Scheme</option>
+        <option value="default">Black on White</option>
+        <option value="cream">Black on Cream</option>
+        <option value="blue">Black on Light Blue</option>
+        <option value="grey">Black on Grey</option>
+        <option value="wob">White on Black</option>
+        <option value="yob">Yellow on Black</option>
+      </select></label>
+    </div>
     <div class="toast" id="toast" hidden></div>
   </div>
-  <main class="stage" id="stage">
-    <div class="qwrap">
-      <div class="notice" id="qnotice" hidden></div>
-      <div class="qbody" id="qbody"></div>
-      <fieldset class="answers" id="answers"></fieldset>
-    </div>
+  <main class="pv-stage" id="stage">
+    <div class="notice" id="qnotice" hidden></div>
+    <div class="qbody" id="qbody"></div>
+    <fieldset class="answers" id="answers"></fieldset>
+    <div class="explain" id="explain-box" hidden></div>
   </main>
-  <div class="reviewpane" id="reviewpane" hidden>
-    <div class="rv-inner">
-      <h2>Navigator</h2>
-      <p>Select a question to go to it, or review a group of questions in order using the buttons below.</p>
-      <div class="rv-sum" id="rv-sum"></div>
-      <div class="rv-grid" id="rv-grid"></div>
-    </div>
-  </div>
-  <footer class="navbar">
-    <div class="grp"><button class="nbtn quiet" id="end-btn" type="button">End Exam</button></div>
-    <div class="grp" id="nav-q">
-      <button class="nbtn" id="prev" type="button" title="Alt+P">◀ <u>P</u>revious</button>
-      <button class="nbtn" id="navbtn" type="button" title="Alt+R">Navigator</button>
-      <button class="nbtn" id="next" type="button" title="Alt+N"><u>N</u>ext ▶</button>
-    </div>
-    <div class="grp" id="nav-rv" hidden>
-      <button class="nbtn" id="rv-all" type="button">Review All</button>
-      <button class="nbtn" id="rv-inc" type="button">Review Incomplete</button>
-      <button class="nbtn" id="rv-flag" type="button">Review Flagged</button>
-      <button class="nbtn go" id="rv-back" type="button">Return to Question</button>
+  <footer class="pv-foot">
+    <div class="grp"><button class="pv-btn" id="end-btn" type="button"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M6 2H2v12h4M10 4.5L13.5 8 10 11.5M13.5 8H5.5"/></svg><span id="end-lbl"><u>E</u>nd Exam</span></button></div>
+    <div class="grp">
+      <button class="pv-btn" id="prev" type="button" title="Alt+P"><svg width="14" height="12" viewBox="0 0 14 12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 1L1 6l5 5M1 6h12"/></svg> <span><u>P</u>revious</span></button>
+      <button class="pv-btn" id="navbtn" type="button" title="Alt+V"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="8" cy="8" r="2.3"/><path d="M8 1v2.2M8 12.8V15M1 8h2.2M12.8 8H15M3 3l1.6 1.6M11.4 11.4L13 13M3 13l1.6-1.6M11.4 4.6L13 3"/></svg><span>Na<u>v</u>igator</span></button>
+      <button class="pv-btn" id="next" type="button" title="Alt+N"><span><u>N</u>ext</span> <svg width="14" height="12" viewBox="0 0 14 12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 1l5 5-5 5M13 6H1"/></svg></button>
     </div>
   </footer>
 </section>
@@ -414,10 +440,24 @@ tbody tr:hover{background:var(--sel-soft)}
 </div>
 
 <div class="modal-back" id="modal" hidden>
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-h">
-    <h3 id="modal-h"></h3>
+  <div class="pv-dlg modal" role="dialog" aria-modal="true" aria-labelledby="modal-h">
+    <div class="pv-dlg-h"><span id="modal-h"></span></div>
     <p id="modal-p"></p>
-    <div class="mbtns" id="modal-btns"></div>
+    <div class="pv-dlg-f" id="modal-btns"></div>
+  </div>
+</div>
+
+<div class="dlg-back" id="navdlg" hidden>
+  <div class="pv-dlg" role="dialog" aria-modal="true" aria-labelledby="nav-h">
+    <div class="pv-dlg-h"><span id="nav-h">Navigator - select a question to go to it</span><button type="button" id="nav-x" aria-label="Close navigator">✕</button></div>
+    <div class="nav-sum" id="rv-sum"></div>
+    <div class="nav-table"><table><thead><tr><th>Question #</th><th>Status</th><th>Flagged for Review</th></tr></thead><tbody id="rv-rows"></tbody></table></div>
+    <div class="pv-dlg-f">
+      <button type="button" class="dlgbtn" id="rv-inc">Review Incomplete</button>
+      <button type="button" class="dlgbtn" id="rv-flag">Review Flagged</button>
+      <button type="button" class="dlgbtn" id="rv-all">Review All</button>
+      <button type="button" class="dlgbtn" id="rv-back">Close</button>
+    </div>
   </div>
 </div>
 
@@ -453,12 +493,12 @@ function modal(title, text, buttons) {
   return new Promise((resolve) => {
     $('#modal-h').textContent = title; $('#modal-p').textContent = text;
     const box = $('#modal-btns'); box.innerHTML = '';
-    buttons.forEach((b, i) => {
+    buttons.forEach((b) => {
       const el = document.createElement('button');
-      el.type = 'button'; el.className = b.primary ? 'primary' : 'secondary'; el.textContent = b.label;
+      el.type = 'button'; el.className = 'dlgbtn'; el.textContent = b.label;
       el.onclick = () => { $('#modal').hidden = true; resolve(b.value); };
       box.appendChild(el);
-      if (i === buttons.length - 1) setTimeout(() => el.focus(), 0);
+      if (b.focus) setTimeout(() => el.focus(), 0);
     });
     $('#modal').hidden = false;
   });
@@ -778,9 +818,8 @@ function showIntro() {
 
 /* ---------------- exam ---------------- */
 function startExam() {
-  Object.assign(S, { cur: 0, answers: {}, flags: {}, visited: {}, timeOn: {}, struck: {}, showAll: {}, elapsed: 0, warned: false, filter: null, mode: 'exam', fullPage: false, reviewOpen: false, attemptId: null });
+  Object.assign(S, { cur: 0, answers: {}, flags: {}, visited: {}, timeOn: {}, struck: {}, showAll: {}, elapsed: 0, warned: false, filter: null, mode: 'exam', fullPage: false, reviewOpen: false, attemptId: null, explain: false });
   S.remaining = S.paper.time;
-  $('#ex-title').textContent = S.paper.title;
   $('#fullpage').hidden = S.paper.source !== 'pdf' || S.paper.booklet;
   $('#fullpage').setAttribute('aria-pressed', 'false');
   $('#qbody').dataset.booklet = '';
@@ -792,8 +831,10 @@ function startExam() {
 }
 function setExamChrome() {
   const rv = S.mode === 'review';
-  $('#flag').hidden = rv; $('#navbtn').hidden = rv;
-  $('#end-btn').textContent = rv ? 'Back to Results' : 'End Exam';
+  $('#flag').hidden = rv;
+  $('#explain').hidden = !rv;
+  $('#explain').setAttribute('aria-pressed', String(!!S.explain));
+  $('#end-lbl').innerHTML = rv ? 'Back to Results' : '<u>E</u>nd Exam';
   $('#timer').disabled = rv;
   $('#toast').hidden = true;
 }
@@ -812,7 +853,7 @@ function tick() {
 }
 function updateTimer() {
   const t = $('#timer');
-  if (S.mode === 'review') { $('#timer-lbl').textContent = 'Review mode'; $('#timer-val').textContent = ''; t.classList.remove('warn', 'hide'); return; }
+  if (S.mode === 'review') { $('#timer-lbl').textContent = 'Review'; $('#timer-val').textContent = ''; t.classList.remove('warn', 'hide'); return; }
   const timed = !!S.paper.time;
   $('#timer-lbl').textContent = timed ? 'Time Remaining' : 'Time Elapsed';
   $('#timer-val').textContent = fmtClock(timed ? S.remaining : S.elapsed);
@@ -831,14 +872,13 @@ function go(i) {
   S.cur = Math.max(0, Math.min(qs.length - 1, i));
   const q = qs[S.cur];
   if (S.mode === 'exam') S.visited[q.num] = true;
-  const paperQ = S.paper.source === 'pdf' && q.num !== S.cur + 1 ? ` · paper Q${q.num}` : '';
-  $('#qcount').textContent = `Question ${S.cur + 1} of ${qs.length}${paperQ}`;
+  $('#qcount').textContent = `${S.cur + 1} of ${qs.length}`;
   $('#flag').setAttribute('aria-pressed', String(!!S.flags[q.num]));
   $('#prev').disabled = prevIndex() === null;
   $('#next').disabled = S.mode === 'review' && nextIndex() === null;
   renderQuestion(q);
   renderAnswers(q);
-  if (!(S.paper.booklet)) $('#stage').scrollTop = 0;
+  if (!S.paper.booklet) $('#stage').scrollTop = 0;
 }
 
 /* rendering PDF crops */
@@ -942,12 +982,12 @@ function renderQuestion(q) {
   if (S.paper.source === 'html') {
     note.hidden = true;
     body.classList.remove('booklet');
-    body.innerHTML = `<div class="qhtml" style="font-size:${16 * S.zoom}px"><span class="qnum">${q.num}</span><div>${q.html}</div></div>`;
+    body.innerHTML = `<div class="qhtml">${q.html}</div>`;
     return;
   }
   if (S.paper.booklet) {
     note.hidden = false;
-    note.textContent = `Booklet view: find question ${q.num} in the paper, then answer it on the sheet below.`;
+    note.textContent = `Booklet view: find question ${q.num} in the paper, then answer it below.`;
     renderBooklet();
     return;
   }
@@ -958,30 +998,40 @@ function renderQuestion(q) {
 
 function currentOptCount(q) { return q.opts ? q.opts.length : (S.showAll[q.num] ? 8 : q.nOpts); }
 function renderAnswers(q) {
-  const fs = $('#answers'), rv = S.mode === 'review';
+  const fs = $('#answers'), rv = S.mode === 'review', reveal = rv && S.explain;
   const n = currentOptCount(q), key = S.paper.key[q.num], mine = S.answers[q.num], struck = S.struck[q.num] || {};
-  let h = `<legend>${rv ? 'Your answer' : `Question ${S.cur + 1} · select one answer`}</legend><div class="opts ${q.opts ? 'opts-text' : 'opts-letters'}">`;
+  let h = `<legend class="sr">Question ${S.cur + 1}: select one answer</legend><div class="opts${q.opts ? '' : ' opts-letters'}">`;
   for (let k = 0; k < n; k++) {
-    const L = LET[k], cls = ['opt'];
-    if (mine === L) cls.push('is-sel');
-    if (struck[L] && !rv) cls.push('is-struck');
-    if (rv && key) { if (L === key) cls.push('is-correct'); else if (L === mine) cls.push('is-wrong'); }
-    h += `<div class="${cls.join(' ')}"><label><input type="radio" name="ans" value="${L}"${mine === L ? ' checked' : ''}${rv ? ' disabled' : ''}><span class="bubble">${L}</span>${q.opts ? `<span class="otext">${q.opts[k]}</span>` : ''}</label>` +
-      (rv ? '' : `<button type="button" class="strike" data-l="${L}" aria-pressed="${!!struck[L]}" aria-label="Cross out option ${L}" title="Cross out ${L}">✕</button>`) + '</div>';
+    const L = LET[k];
+    let mark = '';
+    if (reveal && key) {
+      if (L === key) mark = '<span class="mark ok" aria-label="correct answer">✔</span>';
+      else if (L === mine) mark = '<span class="mark bad" aria-label="your answer, incorrect">✘</span>';
+    }
+    h += `<label class="pv-opt${struck[L] && !rv ? ' struck' : ''}" data-l="${L}"><input type="radio" name="ans" value="${L}"${mine === L ? ' checked' : ''}${rv ? ' disabled' : ''}>` +
+      (q.opts ? `<span class="otext">${q.opts[k]}</span>` : `<span class="ltr">${L}</span>`) + mark + '</label>';
   }
   h += '</div>';
-  if (rv) {
-    const t = `Time on this question: ${fmtDur(S.timeOn[q.num])}.`;
-    if (!key) h += `<p class="verdict">${mine ? `You answered ${mine}.` : 'Not answered.'} No answer key for this question. <span style="font-weight:400;color:var(--muted)">${t}</span></p>`;
-    else if (mine === key) h += `<p class="verdict ok">✓ Correct: ${key}. <span style="font-weight:400;color:var(--muted)">${t}</span></p>`;
-    else h += `<p class="verdict bad">✗ ${mine ? `You answered ${mine}.` : 'Not answered.'} The correct answer is ${key}. <span style="font-weight:400;color:var(--muted)">${t}</span></p>`;
-  } else {
+  if (!rv) {
     const foot = [];
     if (mine) foot.push('<button type="button" class="linkbtn" data-act="clear">Clear answer</button>');
     if (!q.opts && n < 8) foot.push('<button type="button" class="linkbtn" data-act="more">Show options up to H</button>');
     if (foot.length) h += `<div class="ans-foot">${foot.join('')}</div>`;
   }
   fs.innerHTML = h;
+
+  const ex = $('#explain-box');
+  ex.hidden = !reveal;
+  if (reveal) {
+    const which = q.opts ? 'the option marked ✔' : key;
+    const yours = mine ? (q.opts ? 'your answer is marked ✘' : `you answered ${mine}`) : 'you did not answer it';
+    const t = ` Time spent: ${fmtDur(S.timeOn[q.num])}.`;
+    let msg;
+    if (!key) msg = `No answer key was loaded for this question. ${mine ? `You answered ${mine}.` : 'You did not answer it.'}`;
+    else if (mine === key) msg = `<span class="ok">Correct.</span> The answer is ${which}.`;
+    else msg = `<span class="bad">Incorrect.</span> The correct answer is ${which}; ${yours}.`;
+    ex.innerHTML = `<h2>Explain Answer</h2><p>${msg}${t}</p>`;
+  }
 }
 function choose(L) {
   const q = S.paper.questions[S.cur];
@@ -992,18 +1042,18 @@ function choose(L) {
   if (inp) inp.focus();
 }
 $('#answers').addEventListener('change', (e) => { if (e.target.name === 'ans' && S.mode === 'exam') choose(e.target.value); });
+$('#answers').addEventListener('contextmenu', (e) => {
+  const o = e.target.closest('.pv-opt');
+  if (!o || S.mode !== 'exam') return;
+  e.preventDefault();
+  const q = S.paper.questions[S.cur], L = o.dataset.l, m = (S.struck[q.num] = S.struck[q.num] || {});
+  m[L] = !m[L];
+  if (m[L] && S.answers[q.num] === L) delete S.answers[q.num];
+  renderAnswers(q);
+});
 $('#answers').addEventListener('click', (e) => {
   if (S.mode !== 'exam') return;
   const q = S.paper.questions[S.cur];
-  const st = e.target.closest('.strike');
-  if (st) {
-    const L = st.dataset.l, m = (S.struck[q.num] = S.struck[q.num] || {});
-    m[L] = !m[L];
-    if (m[L] && S.answers[q.num] === L) delete S.answers[q.num];
-    renderAnswers(q);
-    const again = document.querySelector(`#answers .strike[data-l="${L}"]`); if (again) again.focus();
-    return;
-  }
   const act = e.target.dataset && e.target.dataset.act;
   if (act === 'clear') { delete S.answers[q.num]; renderAnswers(q); }
   if (act === 'more') { S.showAll[q.num] = true; renderAnswers(q); }
@@ -1023,53 +1073,52 @@ function doNext() {
 }
 function doPrev() { if (S.reviewOpen) return; const p = prevIndex(); if (p !== null) go(p); }
 
-/* navigator / review screen */
+/* navigator */
 function statusOf(i) { const q = S.paper.questions[i]; return S.answers[q.num] ? 'complete' : S.visited[q.num] ? 'incomplete' : 'unseen'; }
 function openReview() {
-  if (S.mode !== 'exam') return;
+  if (S.mode === 'done') return;
   S.reviewOpen = true;
-  $('#stage').hidden = true; $('#toolbar').hidden = true; $('#reviewpane').hidden = false;
-  $('#nav-q').hidden = true; $('#nav-rv').hidden = false;
-  $('#qcount').textContent = 'Navigator';
   renderReview();
-  $('#rv-back').focus();
+  $('#navdlg').hidden = false;
+  const cur = document.querySelector('#rv-rows tr.cur');
+  if (cur) { cur.scrollIntoView({ block: 'nearest' }); cur.focus(); } else $('#rv-back').focus();
 }
-function closeReview() {
-  S.reviewOpen = false;
-  $('#stage').hidden = false; $('#toolbar').hidden = false; $('#reviewpane').hidden = true;
-  $('#nav-q').hidden = false; $('#nav-rv').hidden = true;
-}
+function closeReview() { S.reviewOpen = false; $('#navdlg').hidden = true; }
 function renderReview() {
   const qs = S.paper.questions;
   let c = 0, inc = 0, un = 0, fl = 0;
-  const cells = qs.map((q, i) => {
+  $('#rv-rows').innerHTML = qs.map((q, i) => {
     const st = statusOf(i);
     if (st === 'complete') c++; else if (st === 'incomplete') inc++; else un++;
     if (S.flags[q.num]) fl++;
     const label = st === 'complete' ? 'Complete' : st === 'incomplete' ? 'Incomplete' : 'Unseen';
-    const pq = S.paper.source === 'pdf' && q.num !== i + 1 ? `<small>paper Q${q.num}</small>` : '';
-    return `<button type="button" class="rv-item ${st}" data-i="${i}"><span class="f" aria-label="${S.flags[q.num] ? 'Flagged' : ''}">${S.flags[q.num] ? '⚑' : ''}</span><span>Question ${i + 1}${pq}</span><span class="s">${label}</span></button>`;
+    const cls = st === 'complete' ? '' : st === 'incomplete' ? 'inc' : 'uns';
+    const pq = S.paper.source === 'pdf' && q.num !== i + 1 ? ` <span class="uns">(paper Q${q.num})</span>` : '';
+    return `<tr data-i="${i}" tabindex="0"${i === S.cur ? ' class="cur"' : ''}><td>${i + 1}${pq}</td><td class="${cls}">${label}</td><td class="fl">${S.flags[q.num] ? '⚑ Flagged' : ''}</td></tr>`;
   }).join('');
-  $('#rv-grid').innerHTML = cells;
-  $('#rv-sum').innerHTML = `<span>Complete <b>${c}</b></span><span>Incomplete <b>${inc}</b></span><span>Unseen <b>${un}</b></span><span>Flagged <b>${fl}</b></span>`;
+  $('#rv-sum').innerHTML = `<span>Complete: <b>${c}</b></span><span>Incomplete: <b>${inc}</b></span><span>Unseen: <b>${un}</b></span><span>Flagged: <b>${fl}</b></span>`;
   $('#rv-inc').disabled = c === qs.length;
   $('#rv-flag').disabled = fl === 0;
 }
-$('#rv-grid').addEventListener('click', (e) => { const b = e.target.closest('.rv-item'); if (!b) return; S.filter = null; closeReview(); go(+b.dataset.i); });
+function pickRow(e) { const tr = e.target.closest('tr[data-i]'); if (!tr) return; S.filter = null; closeReview(); go(+tr.dataset.i); }
+$('#rv-rows').addEventListener('click', pickRow);
+$('#rv-rows').addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pickRow(e); } });
 $('#rv-all').onclick = () => { S.filter = null; closeReview(); go(0); };
 $('#rv-inc').onclick = () => { S.filter = S.paper.questions.map((_, i) => i).filter((i) => statusOf(i) !== 'complete'); if (S.filter.length) { closeReview(); go(S.filter[0]); } };
 $('#rv-flag').onclick = () => { S.filter = S.paper.questions.map((q, i) => (S.flags[q.num] ? i : -1)).filter((i) => i >= 0); if (S.filter.length) { closeReview(); go(S.filter[0]); } };
-$('#rv-back').onclick = () => { closeReview(); go(S.cur); };
+$('#rv-back').onclick = closeReview;
+$('#nav-x').onclick = closeReview;
+$('#navdlg').addEventListener('click', (e) => { if (e.target.id === 'navdlg') closeReview(); });
 
 async function confirmEnd() {
   if (S.mode === 'review') { showResults(); return; }
   const qs = S.paper.questions;
   const un = qs.filter((q) => !S.answers[q.num]).length, fl = qs.filter((q) => S.flags[q.num]).length;
-  const bits = [];
-  if (un) bits.push(`${un} unanswered`);
-  if (fl) bits.push(`${fl} flagged`);
-  const msg = (bits.length ? `You have ${bits.join(' and ')} question${(un || fl) === 1 && bits.length === 1 ? '' : 's'}. ` : 'All questions are answered. ') + 'Once you end the exam you can’t change your answers.';
-  const v = await modal('End the exam?', msg, [{ label: 'Return to exam', value: false }, { label: 'End exam', value: true, primary: true }]);
+  const msg = 'You have chosen to end the exam. ' +
+    (un ? `${un} question${un === 1 ? ' is' : 's are'} unanswered. ` : '') +
+    (fl ? `${fl} question${fl === 1 ? ' is' : 's are'} flagged for review. ` : '') +
+    'If you end the exam, you will not be able to return to it. Are you sure you want to end the exam?';
+  const v = await modal('End Exam', msg, [{ label: 'Yes', value: true }, { label: 'No', value: false, focus: true }]);
   if (v) finish(false);
 }
 function finish(timeUp) {
@@ -1078,7 +1127,7 @@ function finish(timeUp) {
   closeReview();
   saveAttempt();
   showResults();
-  if (timeUp) modal('Time is up', 'Your answers have been submitted.', [{ label: 'See results', value: true, primary: true }]);
+  if (timeUp) modal('Time Expired', 'Your time for this exam has expired. Your answers have been submitted.', [{ label: 'OK', value: true, focus: true }]);
 }
 
 /* ---------------- results ---------------- */
@@ -1184,33 +1233,47 @@ $('#navbtn').onclick = openReview;
 $('#flag').onclick = toggleFlag;
 $('#end-btn').onclick = confirmEnd;
 $('#timer').onclick = () => { S.timerHidden = !S.timerHidden; updateTimer(); };
-const ZOOMS = [0.8, 1, 1.2, 1.4, 1.7, 2];
-function setZoom(d) {
-  const i = Math.max(0, Math.min(ZOOMS.length - 1, ZOOMS.indexOf(S.zoom) + d));
-  if (ZOOMS[i] === S.zoom) return;
-  S.zoom = ZOOMS[i];
-  $('#qbody').dataset.booklet = '';
-  renderQuestion(S.paper.questions[S.cur]);
-}
-$('#zoom-in').onclick = () => setZoom(1);
-$('#zoom-out').onclick = () => setZoom(-1);
+$('#explain').onclick = () => {
+  S.explain = !S.explain;
+  $('#explain').setAttribute('aria-pressed', String(S.explain));
+  renderAnswers(S.paper.questions[S.cur]);
+  if (S.explain) $('#explain-box').scrollIntoView({ block: 'nearest' });
+};
 $('#fullpage').onclick = () => { S.fullPage = !S.fullPage; $('#fullpage').setAttribute('aria-pressed', String(S.fullPage)); renderQuestion(S.paper.questions[S.cur]); };
+function applyScheme(v) {
+  document.querySelectorAll('.pv').forEach((el) => { if (v && v !== 'default') el.dataset.scheme = v; else delete el.dataset.scheme; });
+}
+$('#scheme').addEventListener('change', (e) => {
+  const v = e.target.value;
+  if (!v) return;
+  applyScheme(v); store.set('esat-mock-scheme', v);
+  e.target.value = '';
+});
+applyScheme(store.get('esat-mock-scheme', 'default'));
 
 document.addEventListener('keydown', (e) => {
   if (!$('#modal').hidden) return;
+  // Option+letter on Apple keyboards types a symbol, so read the physical key.
+  const k = e.code && e.code.startsWith('Key') ? e.code.slice(3).toLowerCase() : e.key.toLowerCase();
+  const alt = e.altKey && !e.ctrlKey && !e.metaKey;
+  if (!$('#intro').hidden) { if (alt && k === 'n') { e.preventDefault(); startExam(); } return; }
   if ($('#exam').hidden) return;
+  if (S.reviewOpen) {
+    if (e.key === 'Escape' || (alt && (k === 'v' || k === 'r'))) { e.preventDefault(); closeReview(); }
+    return;
+  }
   if (e.target.matches && e.target.matches('input[type=text],input[type=number],textarea,select')) return;
-  if (e.altKey && !e.ctrlKey && !e.metaKey) {
-    const k = e.key.toLowerCase();
+  if (alt) {
     if (k === 'n') doNext();
     else if (k === 'p') doPrev();
     else if (k === 'f') toggleFlag();
-    else if (k === 'r') { if (S.reviewOpen) { closeReview(); go(S.cur); } else openReview(); }
+    else if (k === 'v' || k === 'r') openReview();
+    else if (k === 'e' && S.mode === 'exam') confirmEnd();
     else return;
     e.preventDefault();
     return;
   }
-  if (S.reviewOpen || S.mode !== 'exam' || e.ctrlKey || e.metaKey || e.key.length !== 1) return;
+  if (S.mode !== 'exam' || e.ctrlKey || e.metaKey || e.key.length !== 1) return;
   const idx = LET.indexOf(e.key.toUpperCase());
   if (idx >= 0 && idx < currentOptCount(S.paper.questions[S.cur])) { choose(LET[idx]); e.preventDefault(); }
 });
