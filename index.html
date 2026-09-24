@@ -179,6 +179,11 @@ textarea{resize:vertical;font-family:ui-monospace,Consolas,monospace;font-size:1
 .seg label:has(input:checked){border-color:var(--sel);background:var(--sel-soft);color:var(--sel);font-weight:700}
 .seg input{accent-color:var(--sel)}
 .hint{font-size:12px;color:var(--muted);margin:8px 0 0}
+.parts{display:grid;gap:6px;margin-bottom:8px}
+.partchk{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;border:1px solid #AEBBCA;border-radius:3px;padding:8px 10px;background:#fff;cursor:pointer;font-size:14px}
+.partchk:has(input:checked){border-color:var(--sel);background:var(--sel-soft)}
+.partchk input{width:18px;height:18px;accent-color:var(--sel);margin:0}
+.partchk small{color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
 details.adv{margin-top:12px;font-size:13px}
 details.adv summary{cursor:pointer;color:var(--sel)}
 .keyrow{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:8px}
@@ -272,27 +277,18 @@ tbody tr:hover{background:var(--sel-soft)}
           </li>
           <li class="step">
             <h2>Section and timing</h2>
-            <label class="field" for="preset"><span>Format</span>
-              <select id="preset">
-                <option value="engaa-a">ENGAA Section 1, Part A (Q1–20, 40 min)</option>
-                <option value="engaa-b">ENGAA Section 1, Part B (Q21–40, 40 min)</option>
-                <option value="engaa-full">ENGAA Section 1, both parts (Q1–40, 80 min)</option>
-                <option value="nsaa-part">NSAA Section 1, one part (20 questions, 40 min)</option>
-                <option value="nsaa-two">NSAA Section 1, two parts (40 questions, 80 min)</option>
-                <option value="custom">Custom range</option>
-              </select>
-            </label>
+            <div class="parts" id="parts" hidden></div>
+            <p class="hint" id="parts-hint" style="margin-top:0">Load a paper and its parts appear here, read from the front cover.</p>
             <div class="row">
-              <label class="field" for="q-from"><span>First question</span><input id="q-from" type="number" min="1" value="1"></label>
-              <label class="field" for="q-to"><span>Last question</span><input id="q-to" type="number" min="1" value="20"></label>
-              <label class="field" for="mins"><span>Paper time (min)</span><input id="mins" type="number" min="1" value="40"></label>
+              <label class="field" for="q-list"><span>Questions</span><input id="q-list" type="text" value="1-20" autocomplete="off" placeholder="e.g. 1-20 or 1-18, 37-54"></label>
+              <label class="field" for="mins"><span>Paper time (min)</span><input id="mins" type="number" min="1" value="30"></label>
             </div>
             <div class="seg" role="radiogroup" aria-label="Timing">
               <label><input type="radio" name="timing" id="t-paper" value="paper" checked> Paper time</label>
               <label><input type="radio" name="timing" id="t-esat" value="esat"> <span id="esat-label">ESAT pace</span></label>
               <label><input type="radio" name="timing" id="t-none" value="untimed"> Untimed</label>
             </div>
-            <p class="hint">Question numbers and timings changed between years, so check the front cover of your paper. ESAT pace gives 40 minutes per 27 questions.</p>
+            <p class="hint">Paper time uses the time printed on the paper's cover. ESAT pace gives 40 minutes per 27 questions.</p>
             <details class="adv">
               <summary>Detection settings</summary>
               <div class="row">
@@ -546,34 +542,36 @@ async function extractPages(pdf) {
 const NUM_RE = /^(\d{1,3})(?:[.)]|\s|$)/;
 const JUNK_TXT = /turn over|blank page|end of (the )?(test|section|paper|part)|©|ucles|cambridge assessment|cambridge university press|intentionally (left )?blank/i;
 function isPageNum(it, pg) { return /^[-–\s]*\d{1,3}[-–\s]*$/.test(it.s) && Math.abs((it.x + it.right) / 2 - pg.W / 2) < pg.W * 0.12; }
-function isJunk(it, pg) { return JUNK_TXT.test(it.s) || isPageNum(it, pg); }
+// Running headers ("PART A Mathematics") and part title pages count as page furniture too.
+function isJunk(it, pg) { return JUNK_TXT.test(it.s) || /^PART [A-E]\b/.test(it.s) || isPageNum(it, pg); }
 function inBand(pg, it) { return it.top < pg.H * 0.03 || it.top > pg.H * 0.94; }
 
-// Question numbers sit in the leftmost column that holds a meaningful number of bare numbers.
-// Worked out separately for odd and even pages in case the booklet has mirrored margins.
+// Columns (x positions) where bare numbers line up, for even and odd pages separately in case
+// the booklet has mirrored margins. The question-number column is often NOT the busiest one:
+// numeric answer options can outnumber it, so analyse() tries each and keeps the column whose
+// numbers run in question order the longest.
 function numberColumns(pages, startIdx) {
-  const res = [null, null];
-  for (const par of [0, 1]) {
-    const hist = new Map();
-    let total = 0;
-    for (let i = startIdx; i < pages.length; i++) {
-      const pg = pages[i];
-      if (pg.n % 2 !== par) continue;
-      for (const it of pg.items) {
-        if (!NUM_RE.test(it.s) || it.x > pg.W * 0.35 || inBand(pg, it) || isPageNum(it, pg)) continue;
-        const b = Math.round(it.x / 3);
-        hist.set(b, (hist.get(b) || 0) + 1); total++;
-      }
+  const bins = [new Map(), new Map()];
+  for (let i = startIdx; i < pages.length; i++) {
+    const pg = pages[i], m = bins[pg.n % 2];
+    for (const it of pg.items) {
+      if (!NUM_RE.test(it.s) || it.x > pg.W * 0.4 || inBand(pg, it) || isPageNum(it, pg)) continue;
+      const b = Math.round(it.x / 3);
+      m.set(b, (m.get(b) || 0) + 1);
     }
-    if (total < 2) continue;
-    const sm = [...hist.keys()].map((b) => [b, (hist.get(b - 1) || 0) + hist.get(b) + (hist.get(b + 1) || 0)]);
-    const top = Math.max(...sm.map((s) => s[1]));
-    const sig = sm.filter((s) => s[1] >= Math.max(2, top * 0.3)).sort((a, b) => a[0] - b[0]);
-    if (sig.length) res[par] = sig[0][0] * 3;
   }
-  if (res[0] == null) res[0] = res[1];
-  if (res[1] == null) res[1] = res[0];
-  return res[0] == null ? null : res;
+  const cols = bins.map((m) => [...m.entries()].filter((e) => e[1] >= 2).sort((a, b) => b[1] - a[1] || a[0] - b[0]).slice(0, 8).map((e) => e[0] * 3));
+  if (!cols[0].length) cols[0] = cols[1];
+  if (!cols[1].length) cols[1] = cols[0];
+  return cols[0].length ? cols : null;
+}
+function bestChain(cands, from, to) {
+  const anchors = [];
+  cands.forEach((c, k) => { if (c.num === from) anchors.push(k); });
+  if (!anchors.length) anchors.push(0);
+  let best = { found: {}, count: 0 };
+  for (const k of anchors) { const ch = chain(cands, k, from, to); if (ch.count >= best.count) best = ch; }
+  return best;
 }
 
 function candidates(pages, startIdx, cols) {
@@ -620,6 +618,8 @@ function capJunk(pg, y0, y1) {
   const below = junk.filter((j) => j.top > last);
   return below.length ? Math.min(y1, Math.min(...below.map((j) => j.top)) - 4) : y1;
 }
+// A "PART B …" title below the running-header area marks a new part's title page.
+function startsPart(pg) { return pg.items.some((it) => /^PART [A-E]\b/.test(it.s) && it.top > pg.H * 0.15); }
 function hasContent(pg, y0, y1) {
   const inside = pg.items.filter((it) => it.top >= y0 - 1 && it.top <= y1);
   return !inside.length || inside.some((it) => !isJunk(it, pg));
@@ -641,12 +641,11 @@ function analyse(pages, from, to, startPage, defOpts) {
   const startIdx = Math.min(pages.length - 1, Math.max(0, (startPage || 1) - 1));
   const textCount = pages.reduce((a, p) => a + p.items.length, 0);
   const cols = textCount >= 40 ? numberColumns(pages, startIdx) : null;
-  const cands = cols ? candidates(pages, startIdx, cols) : [];
-  const anchors = [];
-  cands.forEach((c, k) => { if (c.num === from) anchors.push(k); });
-  if (!anchors.length) anchors.push(0);
-  let best = { found: {}, count: 0 };
-  for (const k of anchors) { const ch = chain(cands, k, from, to + 1); if (ch.count >= best.count) best = ch; }
+  let best = { found: {}, count: 0 }, bestX = Infinity;
+  if (cols) for (const ce of cols[0]) for (const co of cols[1]) {
+    const ch = bestChain(candidates(pages, startIdx, [ce, co]), from, to + 1);
+    if (ch.count > best.count || (ch.count === best.count && ce + co < bestX)) { best = ch; bestX = ce + co; }
+  }
 
   const total = to - from + 1;
   let detected = 0;
@@ -670,7 +669,7 @@ function analyse(pages, from, to, startPage, defOpts) {
         if (y1 - y0 > 8 && (hop === 0 || hasContent(pg, y0, y1))) { q.slices.push({ pi, y0, y1 }); used.add(pi); }
         if (endHere || !next || next.pi <= pi) break;
         pi++;
-        if (pi >= pages.length) break;
+        if (pi >= pages.length || startsPart(pages[pi]) || pages[pi].items.some((it) => /blank page/i.test(it.s))) break;
         y0 = contentTop(pages[pi]);
       }
       q.nOpts = detectOptions(pages, q.slices) || defOpts;
@@ -702,47 +701,123 @@ function analyse(pages, from, to, startPage, defOpts) {
 }
 
 /* ---------------- answer keys ---------------- */
-function parseKey(text, from, to) {
+function parseKey(text, nums) {
   const t = (text || '').toUpperCase();
   const key = {};
-  const pairs = [...t.matchAll(/(\d{1,3})\s*[.):\-–]?\s*([A-H])(?![A-Z])/g)];
+  const pairs = [...t.matchAll(/\b(\d{1,3})\s*[.):\-–]?\s*([A-H])(?![A-Z])/g)];
   if (pairs.length >= 2) { for (const m of pairs) key[+m[1]] = m[2]; return key; }
   const letters = t.replace(/[^A-H]/g, '');
-  if (!letters) return key;
-  if (letters.length >= to) for (let n = from; n <= to; n++) key[n] = letters[n - 1];
-  else for (let i = 0; i < letters.length && from + i <= to; i++) key[from + i] = letters[i];
+  if (!letters || !nums.length) return key;
+  // A full-paper string of letters is indexed by question number; a shorter one follows the chosen questions.
+  if (letters.length >= nums[nums.length - 1]) nums.forEach((n) => { key[n] = letters[n - 1]; });
+  else nums.forEach((n, i) => { if (letters[i]) key[n] = letters[i]; });
   return key;
 }
-function rangeFromForm() { return { from: parseInt($('#q-from').value, 10), to: parseInt($('#q-to').value, 10) }; }
+
+/* ---------------- question lists ---------------- */
+function parseList(str) {
+  const out = new Set();
+  const norm = String(str || '').replace(/\s*[-–—]\s*/g, '-');
+  for (const part of norm.split(/[,;\s]+/)) {
+    const m = part.match(/^Q?(\d{1,3})(?:-Q?(\d{1,3}))?$/i);
+    if (!m) continue;
+    const a = +m[1], b = m[2] ? +m[2] : a;
+    for (let n = Math.min(a, b); n <= Math.max(a, b) && out.size < 250; n++) if (n >= 1) out.add(n);
+  }
+  return [...out].sort((x, y) => x - y);
+}
+function listText(nums, dash) {
+  const d = dash || '-', out = [];
+  for (let i = 0; i < nums.length; i++) {
+    let j = i;
+    while (j + 1 < nums.length && nums[j + 1] === nums[j] + 1) j++;
+    out.push(j > i ? `${nums[i]}${d}${nums[j]}` : `${nums[i]}`);
+    i = j;
+  }
+  return out.join(', ');
+}
 function updateKeyStatus() {
-  const { from, to } = rangeFromForm();
+  const nums = parseList($('#q-list').value);
   const txt = $('#key').value.trim();
   if (!txt) { setStatus('#key-status', ''); return; }
-  const key = parseKey(txt, from, to);
-  let n = 0; for (let q = from; q <= to; q++) if (key[q]) n++;
-  setStatus('#key-status', n ? `${n} of ${to - from + 1} answers found for Q${from}–${to}` : 'No answers found for this range yet', n ? 'ok' : 'err');
+  const key = parseKey(txt, nums);
+  const n = nums.filter((q) => key[q]).length;
+  setStatus('#key-status', n ? `${n} of ${nums.length} answers found for the chosen questions` : 'No answers found for the chosen questions yet', n ? 'ok' : 'err');
+}
+
+/* ---------------- reading the front cover ---------------- */
+// ENGAA covers list "Part A Mathematics and Physics (20 questions)"; NSAA covers say
+// "Each part has 18 multiple-choice questions" and "complete two further parts". Questions are
+// numbered straight through the booklet, so each part's range follows from those counts.
+function readCover(pages) {
+  const txt = pages.slice(0, 2).map((p) => p.items.map((i) => i.s).join(' ')).join(' ').replace(/\s+/g, ' ');
+  const test = /NATURAL SCIENCES/i.test(txt) ? 'NSAA' : /ENGINEERING/i.test(txt) ? 'ENGAA' : null;
+  const mm = txt.match(/end of (\d+) minutes/i) || txt.match(/\b(\d+) minutes/i);
+  const cover = { test, minutes: mm ? +mm[1] : null, parts: [], attempt: 0 };
+  if (test === 'NSAA') {
+    const per = txt.match(/Each part has (\d+) multiple/i);
+    if (per) {
+      const k = +per[1], seen = new Set(['A']);
+      const parts = [{ L: 'A', name: 'Mathematics' }];
+      for (const m of txt.matchAll(/Part ([B-E]) (Physics|Chemistry|Biology|Advanced Mathematics and Advanced Physics)/gi)) {
+        const L = m[1].toUpperCase();
+        if (!seen.has(L)) { seen.add(L); parts.push({ L, name: m[2] }); }
+      }
+      parts.forEach((p, i) => { p.from = i * k + 1; p.to = (i + 1) * k; });
+      cover.parts = parts;
+      const f = txt.match(/then complete (one|two|three) further part/i);
+      cover.attempt = 1 + ({ one: 1, two: 2, three: 3 }[f ? f[1].toLowerCase() : 'one']);
+    }
+  } else if (test === 'ENGAA') {
+    let n = 1;
+    for (const m of txt.matchAll(/Part ([A-E]) ([^()]{3,80}?) \((\d+) questions\)/gi)) {
+      const k = +m[3];
+      cover.parts.push({ L: m[1].toUpperCase(), name: m[2].trim(), from: n, to: n + k - 1 });
+      n += k;
+    }
+    cover.attempt = cover.parts.length;
+  }
+  return cover;
+}
+function renderParts() {
+  const c = S.cover, box = $('#parts'), hint = $('#parts-hint');
+  if (!c || !c.parts.length) {
+    box.hidden = true; box.innerHTML = '';
+    hint.textContent = S.pdf ? 'The parts couldn’t be read from this paper’s cover. Type the question numbers and time below.' : 'Load a paper and its parts appear here, read from the front cover.';
+    return;
+  }
+  const nsaa = c.test === 'NSAA';
+  box.innerHTML = c.parts.map((p, i) => {
+    const on = nsaa ? i < c.attempt : true;
+    return `<label class="partchk" for="part-${p.L}"><input type="checkbox" id="part-${p.L}" value="${p.L}"${on ? ' checked' : ''}><span><b>Part ${p.L}</b> ${esc(p.name)}</span><small>Q${p.from}–${p.to}</small></label>`;
+  }).join('');
+  box.hidden = false;
+  hint.textContent = nsaa
+    ? `${c.test}: Part A plus ${c.attempt - 1} other part${c.attempt > 2 ? 's' : ''}, ${c.minutes || '?'} minutes in the real test. Tick the parts you want; the time scales to match.`
+    : `${c.test}: ${c.parts.length} parts, ${c.minutes || '?'} minutes in the real test. Untick a part to practise the other on its own; the time scales to match.`;
+  syncFromParts();
+}
+function syncFromParts() {
+  const c = S.cover;
+  if (!c || !c.parts.length) return;
+  const sel = c.parts.filter((p) => $('#part-' + p.L).checked);
+  const nums = [];
+  sel.forEach((p) => { for (let n = p.from; n <= p.to; n++) nums.push(n); });
+  $('#q-list').value = listText(nums);
+  if (c.minutes && sel.length) $('#mins').value = Math.round(c.minutes * sel.length / (c.attempt || c.parts.length));
+  updateEsatLabel(); updateKeyStatus();
 }
 
 /* ---------------- home screen ---------------- */
-const PRESETS = {
-  'engaa-a': { from: 1, to: 20, mins: 40 }, 'engaa-b': { from: 21, to: 40, mins: 40 }, 'engaa-full': { from: 1, to: 40, mins: 80 },
-  'nsaa-part': { from: 1, to: 20, mins: 40 }, 'nsaa-two': { from: 1, to: 40, mins: 80 }
-};
-function applyPreset() {
-  const p = PRESETS[$('#preset').value];
-  if (p) { $('#q-from').value = p.from; $('#q-to').value = p.to; $('#mins').value = p.mins; }
-  updateEsatLabel(); updateKeyStatus();
-}
 function updateEsatLabel() {
-  const { from, to } = rangeFromForm();
-  const n = to - from + 1;
+  const n = parseList($('#q-list').value).length;
   $('#esat-label').textContent = n > 0 ? `ESAT pace (${fmtDur(n * 2400 / 27)})` : 'ESAT pace';
 }
 function timeLimit(n) {
   const t = document.querySelector('input[name=timing]:checked').value;
   if (t === 'untimed') return 0;
   if (t === 'esat') return Math.round(n * 2400 / 27);
-  return Math.max(1, parseFloat($('#mins').value) || 40) * 60;
+  return Math.max(1, parseFloat($('#mins').value) || 30) * 60;
 }
 
 async function loadPaperFile(file) {
@@ -757,7 +832,8 @@ async function loadPaperFile(file) {
     if (!nm.value || nm.dataset.auto) { nm.value = file.name.replace(/\.pdf$/i, '').replace(/[_]+/g, ' '); nm.dataset.auto = '1'; }
     const textCount = pages.reduce((a, p) => a + p.items.length, 0);
     setStatus('#pdf-status', `✓ ${file.name} · ${pdf.numPages} pages` + (textCount < 40 ? ' · no selectable text, so it will open in booklet view' : ''), 'ok');
-    if (/nsaa/i.test(file.name) && $('#preset').value.startsWith('engaa')) { $('#preset').value = 'nsaa-part'; applyPreset(); }
+    S.cover = readCover(pages);
+    renderParts();
   } catch (e) {
     S.pdf = null; S.pages = null;
     setStatus('#pdf-status', 'That file could not be opened as a PDF. Choose the question paper PDF and try again.', 'err');
@@ -798,7 +874,7 @@ function keyCount() { const p = S.paper; return p.questions.filter((q) => p.key[
 function showIntro() {
   const p = S.paper, n = p.questions.length;
   $('#intro-title').textContent = p.title;
-  const range = p.source === 'pdf' ? ` (paper Q${p.questions[0].num}–${p.questions[n - 1].num})` : '';
+  const range = p.source === 'pdf' ? ` (paper Q${listText(p.questions.map((q) => q.num), '–')})` : '';
   const kc = keyCount();
   $('#intro-facts').innerHTML =
     `<dt>Questions</dt><dd>${n}${range}</dd>` +
@@ -1189,15 +1265,14 @@ $('#res-review').onclick = () => reviewAt(0);
 $('#res-retake').onclick = () => { $('#res-key-text').value = ''; showIntro(); };
 $('#res-home').onclick = () => { $('#res-key-text').value = ''; renderHistory(); show('home'); };
 $('#res-mark').onclick = () => {
-  const p = S.paper, from = p.questions[0].num, to = p.questions[p.questions.length - 1].num;
-  p.key = parseKey($('#res-key-text').value, from, to);
+  const p = S.paper;
+  p.key = parseKey($('#res-key-text').value, p.questions.map((q) => q.num));
   saveAttempt(); showResults();
 };
 
 /* ---------------- wiring ---------------- */
-$('#preset').onchange = applyPreset;
-['#q-from', '#q-to'].forEach((s) => $(s).addEventListener('input', () => { $('#preset').value = 'custom'; updateEsatLabel(); updateKeyStatus(); }));
-$('#mins').addEventListener('input', () => { if (PRESETS[$('#preset').value] && +$('#mins').value !== PRESETS[$('#preset').value].mins) $('#preset').value = 'custom'; });
+$('#parts').addEventListener('change', syncFromParts);
+$('#q-list').addEventListener('input', () => { updateEsatLabel(); updateKeyStatus(); });
 $('#key').addEventListener('input', updateKeyStatus);
 $('#paper-name').addEventListener('input', (e) => { delete e.target.dataset.auto; });
 $('#pdf-file').addEventListener('change', (e) => loadPaperFile(e.target.files[0]));
@@ -1210,15 +1285,23 @@ drop.addEventListener('drop', (e) => { const f = e.dataTransfer.files[0]; if (f)
 $('#start-btn').onclick = async () => {
   setStatus('#start-msg', '');
   if (!S.pdf) { setStatus('#start-msg', 'Add a question paper PDF first, or try the demo paper.', 'err'); return; }
-  const { from, to } = rangeFromForm();
-  if (!(from >= 1 && to >= from && to - from < 150)) { setStatus('#start-msg', 'Check the question range: the last question must be after the first.', 'err'); return; }
+  const nums = parseList($('#q-list').value);
+  if (!nums.length) { setStatus('#start-msg', 'Enter the questions to sit, e.g. 1-20 or 1-18, 37-54.', 'err'); return; }
+  if (nums[nums.length - 1] - nums[0] > 200) { setStatus('#start-msg', 'That question range is too wide. Check the question numbers.', 'err'); return; }
   const btn = $('#start-btn');
   btn.disabled = true; setStatus('#start-msg', 'Finding questions…');
   await new Promise((r) => setTimeout(r, 30));
-  const r = analyse(S.pages, from, to, parseInt($('#start-page').value, 10) || 0, +$('#def-opts').value);
+  // Detect across the whole span (so gaps between chosen parts still bound each question), then keep the chosen ones.
+  const r = analyse(S.pages, nums[0], nums[nums.length - 1], parseInt($('#start-page').value, 10) || 0, +$('#def-opts').value);
+  const want = new Set(nums);
+  r.questions = r.questions.filter((q) => want.has(q.num));
+  r.total = r.questions.length;
+  r.detected = r.questions.filter((q) => !q.fallback).length;
+  const pis = r.questions.flatMap((q) => q.slices.map((sl) => sl.pi));
+  r.pageSpan = pis.length ? [Math.min(...pis) + 1, Math.max(...pis) + 1] : null;
   S.paper = Object.assign(r, {
     title: $('#paper-name').value.trim() || 'Past paper',
-    source: 'pdf', time: timeLimit(to - from + 1), key: parseKey($('#key').value, from, to)
+    source: 'pdf', time: timeLimit(nums.length), key: parseKey($('#key').value, nums)
   });
   btn.disabled = false; setStatus('#start-msg', '');
   showIntro();
@@ -1289,7 +1372,7 @@ window.addEventListener('resize', () => {
 });
 
 if (!hasPdf) setStatus('#pdf-status', 'The PDF reader could not load. The demo paper still works; reload to try again.', 'err');
-applyPreset();
+updateEsatLabel();
 renderHistory();
 })();
 </script>
